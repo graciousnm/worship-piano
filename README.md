@@ -23,13 +23,14 @@ A self-hosted, browser-based worship piano curriculum with interactive YouTube l
 
 | Layer | Technology |
 |-------|-----------|
-| **Runtime** | Node.js |
+| **Runtime** | Node.js ≥18 |
 | **Server** | Express |
 | **Database** | SQLite (via `sqlite3`) |
 | **Frontend** | Vanilla JavaScript, HTML5, CSS3 |
 | **Styling** | Tailwind CSS (CDN) |
 | **Video** | YouTube IFrame API |
 | **Content Sync** | YouTube RSS feeds → `sync-rss.js` |
+| **Process Manager** | PM2 (optional, recommended for production) |
 | **Git Hooks** | Pre-commit syntax check (`node --check`) |
 
 **No build step, no bundler, no framework** — just `node server.js` and you're running.
@@ -39,14 +40,14 @@ A self-hosted, browser-based worship piano curriculum with interactive YouTube l
 ## 🚀 Quick Start
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) v16 or later
+- [Node.js](https://nodejs.org/) v18 or later
 - npm (comes with Node.js)
 
 ### Setup
 
 ```bash
 # Clone the repository
-git clone <your-repo-url> gospel-piano
+git clone https://github.com/graciousnm/worship-piano.git gospel-piano
 cd gospel-piano
 
 # Install dependencies
@@ -60,16 +61,46 @@ The app is now running at **[http://localhost:3000](http://localhost:3000)**.
 
 On first launch, the database is seeded with 17 modules and 88+ lessons. The server then auto-syncs with Worship Piano Academy's YouTube playlists to pick up any new videos.
 
-### Development
+### Development Mode
 
 ```bash
-# The pre-commit hook checks JavaScript syntax before every commit
-# It runs automatically — no setup needed
+npm run dev
+```
 
-# Force a manual syntax check:
-node --check server.js
-node --check sync-rss.js
-node --check public/app.js
+This sets `NODE_ENV=development` which disables caching for easier live-reloading.
+
+### Production Mode
+
+```bash
+NODE_ENV=production node server.js
+```
+
+Or use PM2 for process management (recommended):
+
+```bash
+# Install PM2 globally
+npm install -g pm2
+
+# Start with PM2
+npm run pm2:start
+
+# Save the process list so it auto-starts on reboot
+pm2 save
+pm2 startup
+```
+
+---
+
+## 🔧 Configuration
+
+Copy `.env.example` to `.env` and customize:
+
+```env
+PORT=3000
+NODE_ENV=production
+DB_PATH=gospel_piano.db
+SYNC_INTERVAL_MS=21600000   # 6 hours
+CORS_ORIGIN=*               # Set to your domain in production
 ```
 
 ---
@@ -115,6 +146,15 @@ Full curriculum breakdown: **[http://localhost:3000/curriculum.html](http://loca
 - **Hamburger menu** — progress stats and reset on mobile
 - **Breadcrumb trail** — always know where you are
 
+### Production Features
+- **Compression** — gzip for all responses (saves ~75% bandwidth)
+- **Security headers** — CSP, HSTS, X-Content-Type-Options via Helmet
+- **Caching** — static files cached for 7 days in production
+- **Custom error pages** — styled 404 and 500 pages instead of Express defaults
+- **Health endpoint** — `GET /api/health` for uptime monitoring
+- **PM2 ecosystem** — process management, auto-restart, log rotation
+- **Graceful shutdown** — clean database close on SIGINT/SIGTERM
+
 ### Content Management
 - **RSS auto-sync** — fetches new videos from WPA playlists on startup + every 6 hours
 - **Manual sync endpoint** — `POST /api/sync` to force a refresh
@@ -129,15 +169,20 @@ gospel-piano/
 ├── server.js              # Express server, SQLite, API routes, seed data
 ├── sync-rss.js            # YouTube RSS feed fetcher & upsert logic
 ├── playlist-modules.json  # Maps YouTube playlists → module sort_orders
-├── package.json           # Dependencies (express, sqlite3, cors)
-├── .gitignore             # Ignores node_modules, DB files, logs
+├── ecosystem.config.js    # PM2 process manager configuration
+├── package.json           # Dependencies and scripts
+├── .env                   # Environment variables (PORT, DB_PATH, etc.)
+├── .env.example           # Documented example env file
+├── .gitignore             # Ignores node_modules, DB files, logs, .env
 ├── .git/
 │   └── hooks/
 │       └── pre-commit     # Checks JS syntax before commits
 └── public/
     ├── index.html         # Main app UI (header, views, CSS, modals)
     ├── app.js             # All client-side logic (phases, player, search, PiP)
-    └── curriculum.html    # Full curriculum overview page
+    ├── curriculum.html    # Full curriculum overview page
+    ├── 404.html           # Custom 404 error page
+    └── 500.html           # Custom 500 error page
 ```
 
 ---
@@ -146,9 +191,88 @@ gospel-piano/
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `GET` | `/api/health` | Health check with uptime, environment, version |
 | `GET` | `/api/modules` | Returns all modules with nested lessons |
 | `POST` | `/api/sync` | Triggers RSS sync from WPA playlists |
 | `GET` | `/curriculum.html` | Static curriculum overview page |
+
+---
+
+## 🌐 Deployment (Oracle Free Tier & VPS)
+
+This app is extremely lightweight and runs comfortably on **Oracle Cloud free tier** (1 GB RAM, 1/8 OCPU) or any small VPS.
+
+### Quick Deploy
+
+```bash
+# SSH into your server
+ssh ubuntu@your-server-ip
+
+# Install Node.js 20
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs git
+
+# Install PM2
+sudo npm install -g pm2
+
+# Clone and setup
+git clone https://github.com/graciousnm/worship-piano.git
+cd worship-piano
+npm install
+cp .env.example .env
+# Edit .env to set CORS_ORIGIN to your domain and PORT as needed
+
+# Start with PM2
+pm2 start ecosystem.config.js
+pm2 save
+sudo pm2 startup  # Auto-start on reboot
+```
+
+### Resource Usage
+
+On the Oracle free tier:
+- **RAM:** ~50-80 MB (leaves 920+ MB for other apps)
+- **CPU:** Near idle when not serving requests
+- **Disk:** ~100 MB for code + ~5 MB for SQLite database
+
+### Reverse Proxy (to serve on port 80/443)
+
+```bash
+# Install Nginx
+sudo apt install -y nginx
+
+# Configure
+sudo nano /etc/nginx/sites-available/gospel-piano
+```
+
+Basic nginx config:
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/gospel-piano /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl restart nginx
+```
+
+For HTTPS, use Certbot:
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d your-domain.com
+```
 
 ---
 
