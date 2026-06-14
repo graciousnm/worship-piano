@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — Page Not Found | Gospel Piano</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: #09090b;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .error-glow {
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body class="font-sans antialiased">
+  <div class="text-center px-6 max-w-lg">
+    <div class="error-glow mb-6">
+      <span class="text-7xl sm:text-8xl block" style="filter: drop-shadow(0 0 30px rgba(245,158,11,0.15));">🎹</span>
+    </div>
+    <h1 class="text-6xl sm:text-7xl font-black text-zinc-800 mb-4">404</h1>
+    <p class="text-xl sm:text-2xl font-semibold text-zinc-400 mb-2">Page not found</p>
+    <p class="text-sm sm:text-base text-zinc-600 mb-8 max-w-sm mx-auto">
+      That chord didn't resolve. The page you're looking for doesn't exist or has been moved.
+    </p>
+    <a href="/"
+      class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm bg-brand text-zinc-900 hover:bg-brand-light transition shadow-lg shadow-brand/20 hover:shadow-brand/30 active:scale-95 no-underline">
+      <span>🎵</span>
+      Back to the music
+    </a>
+  </div>
+</body>
+</html>

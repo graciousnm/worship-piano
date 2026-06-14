@@ -1,18 +1,31 @@
 {
-  "name": "gospel-piano",
-  "version": "1.0.0",
+  "name": "gospel-piano",  "version": "1.0.0",
+  "private": true,
   "description": "Gospel Piano Learning Platform - aggregated, dynamic curriculum SPA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"No tests yet\" && exit 0"
+    "dev": "NODE_ENV=development node server.js",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop gospel-piano",
+    "pm2:restart": "pm2 restart gospel-piano",
+    "pm2:logs": "pm2 logs gospel-piano",
+    "pm2:status": "pm2 status",
+    "test": "echo \"No tests yet\" && exit 0",
+    "syntax": "node --check server.js && node --check public/app.js && echo '✅ Syntax OK'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": ["gospel", "piano", "learning", "music"],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "helmet": "^8.2.0",
     "sqlite3": "^6.0.1"
   }
 }

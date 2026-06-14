@@ -1,19 +1,72 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 const { syncPlaylists } = require('./sync-rss');
 
+// ── Environment Config ──────────────────────────────────────
+require('dotenv').config();
+
 const app = express();
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT, 10) || 3000;
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'gospel_piano.db');
+const SYNC_INTERVAL_MS = parseInt(process.env.SYNC_INTERVAL_MS, 10) || 6 * 60 * 60 * 1000;
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+const isDev = process.env.NODE_ENV === 'development';
 
 // ── Middleware ──────────────────────────────────────────────
-app.use(cors());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Security headers (helmet with relaxed settings for embedded YouTube)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.youtube.com', 'https://cdn.tailwindcss.com', 'https://s.ytimg.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.tailwindcss.com'],
+        imgSrc: ["'self'", 'data:', 'https://img.youtube.com', 'https://i.ytimg.com', 'https://yt3.ggpht.com'],
+        frameSrc: ["'self'", 'https://www.youtube.com'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        mediaSrc: ["'self'"],
+        objectSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+
+// Compression — gzip all responses (after helmet, before routes)
+app.use(compression({ level: 6, threshold: 512 }));
+
+// CORS
+app.use(cors({ origin: CORS_ORIGIN }));
+
+// Static files with cache headers
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    maxAge: isDev ? 0 : 7 * 24 * 60 * 60 * 1000, // 7 days in production
+    immutable: !isDev,
+    etag: true,
+    lastModified: true,
+  })
+);
+
+// Ensure logs directory exists (for PM2 logs)
+if (!fs.existsSync(path.join(__dirname, 'logs'))) {
+  fs.mkdirSync(path.join(__dirname, 'logs'), { recursive: true });
+}
 
 // ── Database Setup ─────────────────────────────────────────
-const DB_PATH = path.join(__dirname, 'gospel_piano.db');
 const db = new sqlite3.Database(DB_PATH);
+
+// Log startup config
+if (!isDev) {
+  console.log(`🔧 Production config: PORT=${PORT} DB=${path.basename(DB_PATH)} SYNC=${Math.round(SYNC_INTERVAL_MS / 60000)}min`);
+}
 
 // ── Table Creation ─────────────────────────────────────────
 db.serialize(() => {
@@ -354,6 +407,18 @@ function seedDatabase(callback) {
 }
 
 // ── API Routes ─────────────────────────────────────────────
+
+// Health check endpoint for monitoring / uptime checks
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0',
+  });
+});
+
 app.get('/api/modules', (req, res) => {
   db.all('SELECT * FROM modules ORDER BY sort_order', (err, modules) => {
     if (err) {
@@ -395,13 +460,34 @@ app.post('/api/sync', (req, res) => {
     });
 });
 
+// ── 404 Catch-All ─────────────────────────────────────────
+// Must be after all routes — serves custom 404 page
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
+// ── Global Error Handler ────────────────────────────────────
+// Express identifies this as an error handler because of the 4 params
+app.use((err, req, res, next) => {
+  console.error('❌ Unhandled error:', err.message);
+  if (isDev) {
+    console.error(err.stack);
+  }
+  if (req.path.startsWith('/api/')) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+  res.status(500).sendFile(path.join(__dirname, 'public', '500.html'));
+});
+
 // ── Start Server ───────────────────────────────────────────
 const server = app.listen(PORT, () => {
   console.log(`🎹 Gospel Piano server running at http://localhost:${PORT}`);
 });
 
 // ── Scheduled RSS Sync (every 6 hours) ────────────────────
-const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 setInterval(() => {
   console.log('⏰ Scheduled RSS sync triggered');
   syncPlaylists(db).catch(err => console.error('Scheduled sync error:', err.message));

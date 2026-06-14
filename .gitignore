@@ -8,3 +8,4 @@ gospel_piano.db
 .env
 .DS_Store
 Thumbs.db
+logs/
