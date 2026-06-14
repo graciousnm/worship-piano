@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Curriculum — Gospel Piano</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#f59e0b', light: '#fbbf24', dark: '#d97706' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,158,11,0.04) 0%, transparent 70%),
+                  radial-gradient(ellipse 50% 40% at 80% 80%, rgba(245,158,11,0.03) 0%, transparent 70%),
+                  #09090b;
+    }
+    .phase-section {
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+    }
+    .phase-section:hover {
+      border-left-color: var(--phase-color);
+      background: rgba(255,255,255,0.015);
+    }
+    .skill-chip {
+      transition: all 0.2s ease;
+    }
+    .skill-chip:hover {
+      transform: translateY(-1px);
+    }
+    .timeline-dot {
+      box-shadow: 0 0 12px var(--phase-color);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+  </style>
+</head>
+<body class="text-zinc-200 min-h-screen font-sans antialiased">
+
+  <!-- Header -->
+  <header class="border-b border-zinc-800/60 sticky top-0 z-50" style="background: rgba(24,24,27,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 sm:gap-3 flex-shrink-0 no-underline">
+        <span class="text-xl sm:text-2xl" style="filter: drop-shadow(0 0 8px rgba(245,158,11,0.3));">🎹</span>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight">
+          <span class="text-brand">Gospel</span>
+          <span class="text-zinc-300">Piano</span>
+        </h1>
+      </a>
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-sm text-zinc-400 hover:text-brand transition">← Back to Lessons</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 custom-scroll">
+
+    <!-- Hero -->
+    <div class="text-center mb-12 sm:mb-16">
+      <span class="text-5xl sm:text-6xl block mb-4" style="filter: drop-shadow(0 0 20px rgba(245,158,11,0.2));">📖</span>
+      <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3">
+        <span class="text-brand">Worship Piano</span>
+        <span class="text-zinc-200"> Curriculum</span>
+      </h2>
+      <p class="text-zinc-500 text-sm sm:text-base max-w-2xl mx-auto leading-relaxed">
+        A complete path from your first note to leading worship as a professional church musician.
+        Progress through five phases, each building on the last.
+      </p>
+    </div>
+
+    <!-- ═══════════ PHASE 1: FOUNDATIONS ═══════════ -->
+    <section class="phase-section rounded-2xl border border-zinc-800/60 p-6 sm:p-8 mb-8" style="--phase-color: #34d399; background: rgba(24,24,27,0.5);">
+      <div class="flex items-start gap-4 sm:gap-5 mb-6">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 timeline-dot" style="background: rgba(52,211,153,0.12); --phase-color: #34d399;">🌱</div>
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h3 class="text-xl sm:text-2xl font-bold" style="color: #34d399;">Phase 1: Piano Foundations</h3>
+            <span class="text-[0.65rem] font-semibold px-2.5 py-0.5 rounded-full border" style="color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08);">Months 1–3</span>
+          </div>
+          <p class="text-zinc-500 text-sm mt-1.5">Build your technical foundation — everything starts here.</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎵 Technique</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Hand independence</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Proper posture & finger numbering</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> 5-finger scales (C, G, F major)</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Simple melodies</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎹 Basic Chords</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Major & minor triads in root position</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Smooth switching between chords</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Chord inversions & voice leading</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🥁 Rhythm & Songs</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Quarter, half & whole notes</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Simple 4/4 strumming patterns</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Play hymns with triads ("Amazing Grace")</li>
+            <li class="flex items-start gap-2"><span class="text-[#34d399] mt-0.5">•</span> Sustain pedal basics</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #34d399; border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.06); cursor: default;">Hand Independence</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #34d399; border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.06); cursor: default;">Finger Numbering</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #34d399; border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.06); cursor: default;">5-Finger Scales</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #34d399; border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.06); cursor: default;">Triads</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #34d399; border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.06); cursor: default;">Inversions</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #34d399; border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.06); cursor: default;">Pedal Technique</span>
+      </div>
+    </section>
+
+    <!-- ═══════════ PHASE 2: WORSHIP FOUNDATIONS ═══════════ -->
+    <section class="phase-section rounded-2xl border border-zinc-800/60 p-6 sm:p-8 mb-8" style="--phase-color: #38bdf8; background: rgba(24,24,27,0.5);">
+      <div class="flex items-start gap-4 sm:gap-5 mb-6">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 timeline-dot" style="background: rgba(56,189,248,0.12); --phase-color: #38bdf8;">🔧</div>
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h3 class="text-xl sm:text-2xl font-bold" style="color: #38bdf8;">Phase 2: Worship-Specific Foundations</h3>
+            <span class="text-[0.65rem] font-semibold px-2.5 py-0.5 rounded-full border" style="color: #38bdf8; border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08);">Months 4–6</span>
+          </div>
+          <p class="text-zinc-500 text-sm mt-1.5">Learn the language of modern worship piano — progressions, rhythm & that signature sound.</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎼 Worship Progressions</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> I–V–vi–IV (C–G–Am–F)</li>
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> vi–IV–I–V (Am–F–C–G)</li>
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> Nashville Number System</li>
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> Transposing on the fly</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🥁 Rhythmic Patterns</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> Whole, half & quarter-note pad patterns</li>
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> Flowing vs. driving left hand</li>
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> 3, 4 & 5-note rhythm patterns</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">✨ Modern Worship Sound</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> Dominant 7th & Major 7th chords</li>
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> Sus2, Sus4 & Add9 chords</li>
+            <li class="flex items-start gap-2"><span class="text-[#38bdf8] mt-0.5">•</span> Playing in a band context</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #38bdf8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.06); cursor: default;">I–V–vi–IV</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #38bdf8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.06); cursor: default;">Number System</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #38bdf8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.06); cursor: default;">Sus Chords</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #38bdf8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.06); cursor: default;">Add9</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #38bdf8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.06); cursor: default;">7th Chords</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #38bdf8; border-color: rgba(56,189,248,0.2); background: rgba(56,189,248,0.06); cursor: default;">Band Playing</span>
+      </div>
+    </section>
+
+    <!-- ═══════════ PHASE 3: CONTEMPORARY WORSHIP ═══════════ -->
+    <section class="phase-section rounded-2xl border border-zinc-800/60 p-6 sm:p-8 mb-8" style="--phase-color: #fb923c; background: rgba(24,24,27,0.5);">
+      <div class="flex items-start gap-4 sm:gap-5 mb-6">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 timeline-dot" style="background: rgba(251,146,60,0.12); --phase-color: #fb923c;">🎹</div>
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h3 class="text-xl sm:text-2xl font-bold" style="color: #fb923c;">Phase 3: Contemporary Worship Style</h3>
+            <span class="text-[0.65rem] font-semibold px-2.5 py-0.5 rounded-full border" style="color: #fb923c; border-color: rgba(251,146,60,0.3); background: rgba(251,146,60,0.08);">Months 7–12</span>
+          </div>
+          <p class="text-zinc-500 text-sm mt-1.5">Develop the rich, flowing sound of contemporary worship with passing chords, pads & fills.</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🌊 Atmosphere & Texture</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Flowing arpeggios & broken chords</li>
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Pad & ambient textures with sustain</li>
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Layering with octaves</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎶 Passing Chords</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Secondary dominants</li>
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Diminished passing chords</li>
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Smooth transitions between keys</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎯 Song Mastery</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Melodic fills between phrases</li>
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Pivot chord technique</li>
+            <li class="flex items-start gap-2"><span class="text-[#fb923c] mt-0.5">•</span> Map songs: Intro → Verse → Chorus → Bridge</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #fb923c; border-color: rgba(251,146,60,0.2); background: rgba(251,146,60,0.06); cursor: default;">Arpeggios</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #fb923c; border-color: rgba(251,146,60,0.2); background: rgba(251,146,60,0.06); cursor: default;">Pads</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #fb923c; border-color: rgba(251,146,60,0.2); background: rgba(251,146,60,0.06); cursor: default;">Passing Chords</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #fb923c; border-color: rgba(251,146,60,0.2); background: rgba(251,146,60,0.06); cursor: default;">Modulation</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #fb923c; border-color: rgba(251,146,60,0.2); background: rgba(251,146,60,0.06); cursor: default;">Melodic Fills</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #fb923c; border-color: rgba(251,146,60,0.2); background: rgba(251,146,60,0.06); cursor: default;">Song Mapping</span>
+      </div>
+    </section>
+
+    <!-- ═══════════ PHASE 4: WORSHIP LEADING ═══════════ -->
+    <section class="phase-section rounded-2xl border border-zinc-800/60 p-6 sm:p-8 mb-8" style="--phase-color: #f472b6; background: rgba(24,24,27,0.5);">
+      <div class="flex items-start gap-4 sm:gap-5 mb-6">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 timeline-dot" style="background: rgba(244,114,182,0.12); --phase-color: #f472b6;">🚀</div>
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h3 class="text-xl sm:text-2xl font-bold" style="color: #f472b6;">Phase 4: Worship Leading & Advanced Skills</h3>
+            <span class="text-[0.65rem] font-semibold px-2.5 py-0.5 rounded-full border" style="color: #f472b6; border-color: rgba(244,114,182,0.3); background: rgba(244,114,182,0.08);">Months 12–18</span>
+          </div>
+          <p class="text-zinc-500 text-sm mt-1.5">Lead worship from the piano with confidence, spontaneity & advanced harmony.</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🙏 Spontaneous Worship</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Flowing without sheet music</li>
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Responding to the moment</li>
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Simple modal playing</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎤 Band Leading</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Cueing the band from keys</li>
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Signaling transitions</li>
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Vocal-piano coordination</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎼 Advanced Harmony</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Extended chords (9ths, 11ths, 13ths)</li>
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Quartal voicings (stacked fourths)</li>
+            <li class="flex items-start gap-2"><span class="text-[#f472b6] mt-0.5">•</span> Hillsong, Bethel & Gospel styles</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #f472b6; border-color: rgba(244,114,182,0.2); background: rgba(244,114,182,0.06); cursor: default;">Spontaneous Worship</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #f472b6; border-color: rgba(244,114,182,0.2); background: rgba(244,114,182,0.06); cursor: default;">Band Leading</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #f472b6; border-color: rgba(244,114,182,0.2); background: rgba(244,114,182,0.06); cursor: default;">9ths/11ths/13ths</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #f472b6; border-color: rgba(244,114,182,0.2); background: rgba(244,114,182,0.06); cursor: default;">Quartal Voicings</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #f472b6; border-color: rgba(244,114,182,0.2); background: rgba(244,114,182,0.06); cursor: default;">Stylistic Versatility</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #f472b6; border-color: rgba(244,114,182,0.2); background: rgba(244,114,182,0.06); cursor: default;">Set Building</span>
+      </div>
+    </section>
+
+    <!-- ═══════════ PHASE 5: MASTERY & MINISTRY ═══════════ -->
+    <section class="phase-section rounded-2xl border border-zinc-800/60 p-6 sm:p-8 mb-8" style="--phase-color: #c084fc; background: rgba(24,24,27,0.5);">
+      <div class="flex items-start gap-4 sm:gap-5 mb-6">
+        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0 timeline-dot" style="background: rgba(192,132,252,0.12); --phase-color: #c084fc;">👑</div>
+        <div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <h3 class="text-xl sm:text-2xl font-bold" style="color: #c084fc;">Phase 5: Mastery & Ministry</h3>
+            <span class="text-[0.65rem] font-semibold px-2.5 py-0.5 rounded-full border" style="color: #c084fc; border-color: rgba(192,132,252,0.3); background: rgba(192,132,252,0.08);">Ongoing</span>
+          </div>
+          <p class="text-zinc-500 text-sm mt-1.5">Lifelong growth — transcription, arranging, production & the heart of worship.</p>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎧 Ear & Creativity</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Learn songs by ear, not charts</li>
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Create your own intros & outros</li>
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Build medleys & flow between songs</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">🎛️ Production Awareness</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Piano's role in a full mix</li>
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Mid-range frequencies</li>
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Avoid overplaying</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-zinc-800/60 p-4" style="background: rgba(255,255,255,0.02);">
+          <h4 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-2.5">❤️ Heart & Ministry</h4>
+          <ul class="space-y-1.5 text-xs text-zinc-400">
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Theology of worship</li>
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Serve the congregation</li>
+            <li class="flex items-start gap-2"><span class="text-[#c084fc] mt-0.5">•</span> Show up prepared & be reliable</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #c084fc; border-color: rgba(192,132,252,0.2); background: rgba(192,132,252,0.06); cursor: default;">Transcription</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #c084fc; border-color: rgba(192,132,252,0.2); background: rgba(192,132,252,0.06); cursor: default;">Arranging</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #c084fc; border-color: rgba(192,132,252,0.2); background: rgba(192,132,252,0.06); cursor: default;">Production</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #c084fc; border-color: rgba(192,132,252,0.2); background: rgba(192,132,252,0.06); cursor: default;">Theology</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #c084fc; border-color: rgba(192,132,252,0.2); background: rgba(192,132,252,0.06); cursor: default;">Consistency</span>
+        <span class="skill-chip text-[0.6rem] font-semibold px-2.5 py-1 rounded-full border" style="color: #c084fc; border-color: rgba(192,132,252,0.2); background: rgba(192,132,252,0.06); cursor: default;">Spiritual Preparation</span>
+      </div>
+    </section>
+
+    <!-- ═══════════ PRINCIPLES ═══════════ -->
+    <section class="rounded-2xl border border-brand/20 p-6 sm:p-8" style="background: rgba(245,158,11,0.03);">
+      <h3 class="text-lg sm:text-xl font-bold text-brand mb-5 flex items-center gap-2">
+        <span>💡</span> Key Worship Piano Principles
+      </h3>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="flex items-start gap-3 p-3 rounded-xl" style="background: rgba(24,24,27,0.4);">
+          <span class="text-brand text-lg flex-shrink-0 mt-0.5">①</span>
+          <div>
+            <h4 class="text-sm font-semibold text-zinc-200">Less is More</h4>
+            <p class="text-xs text-zinc-500 mt-0.5">Space creates atmosphere. You don't need to fill every moment — let the music breathe.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 p-3 rounded-xl" style="background: rgba(24,24,27,0.4);">
+          <span class="text-brand text-lg flex-shrink-0 mt-0.5">②</span>
+          <div>
+            <h4 class="text-sm font-semibold text-zinc-200">Serve the Lyrics</h4>
+            <p class="text-xs text-zinc-500 mt-0.5">Your playing supports the message. The words matter more than your chops.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 p-3 rounded-xl" style="background: rgba(24,24,27,0.4);">
+          <span class="text-brand text-lg flex-shrink-0 mt-0.5">③</span>
+          <div>
+            <h4 class="text-sm font-semibold text-zinc-200">Dynamics Tell the Story</h4>
+            <p class="text-xs text-zinc-500 mt-0.5">Soft verses, building pre-choruses, powerful choruses — dynamics guide the congregation.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 p-3 rounded-xl" style="background: rgba(24,24,27,0.4);">
+          <span class="text-brand text-lg flex-shrink-0 mt-0.5">④</span>
+          <div>
+            <h4 class="text-sm font-semibold text-zinc-200">Know When to Stop</h4>
+            <p class="text-xs text-zinc-500 mt-0.5">Silence is powerful. Sometimes the most spiritual thing you can play is nothing at all.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3 p-3 rounded-xl sm:col-span-2" style="background: rgba(24,24,27,0.4);">
+          <span class="text-brand text-lg flex-shrink-0 mt-0.5">⑤</span>
+          <div>
+            <h4 class="text-sm font-semibold text-zinc-200">Prepare Spiritually</h4>
+            <p class="text-xs text-zinc-500 mt-0.5">You're not just a musician — you're a minister. Your spiritual preparation shapes the worship experience as much as your practice does.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <div class="text-center mt-12 sm:mt-16 pb-8">
+      <a href="/" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm bg-brand text-zinc-900 hover:bg-brand-light transition shadow-lg shadow-brand/20 hover:shadow-brand/30 active:scale-95">
+        🎹 Start Learning Now
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+
+  </main>
+</body>
+</html>

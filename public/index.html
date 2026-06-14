@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gospel Piano Learning Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#f59e0b', light: '#fbbf24', dark: '#d97706' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* ── Body & Background ──────────────────────── */
+    body {
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,158,11,0.04) 0%, transparent 70%),
+                  radial-gradient(ellipse 50% 40% at 80% 80%, rgba(245,158,11,0.03) 0%, transparent 70%),
+                  #09090b;
+    }
+
+    /* ── Custom Scrollbar ────────────────────────── */
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* ── View Transitions ────────────────────────── */
+    .view {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .view.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Forward navigation: phase → lesson → video (slide from right) */
+    .view.slide-forward-in {
+      animation: slideInRight 0.38s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+      z-index: 1;
+    }
+    .view.slide-forward-out {
+      animation: slideOutLeft 0.3s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+    }
+
+    /* Back navigation: video → lesson → phase (slide from left) */
+    .view.slide-back-in {
+      animation: slideInLeft 0.38s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+      z-index: 1;
+    }
+    .view.slide-back-out {
+      animation: slideOutRight 0.3s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+    }
+
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(48px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOutLeft {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(-36px); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-48px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOutRight {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(36px); }
+    }
+
+    /* ── Phase Cards ─────────────────────────────── */
+    .phase-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .phase-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(255,255,255,0.06) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .phase-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    .phase-card:hover::before { opacity: 1; }
+    .phase-card:active {
+      transform: translateY(-1px);
+      transition: all 0.1s ease;
+    }
+    .phase-card-accent {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      border-radius: 1rem 1rem 0 0;
+    }
+
+    /* ── Lesson Cards ────────────────────────────── */
+    .lesson-card {
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .lesson-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at var(--mx,50%) var(--my,50%), rgba(245,158,11,0.1) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .lesson-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+      border-color: rgba(245,158,11,0.25);
+    }
+    .lesson-card:hover::after { opacity: 1; }
+    .lesson-card:active {
+      transform: translateY(0);
+      transition: all 0.08s ease;
+    }
+    .lesson-card.completed {
+      opacity: 0.55;
+      border-color: rgba(245,158,11,0.15);
+    }
+    .lesson-card.completed:hover { opacity: 0.75; }
+
+    /* ── Module Section Header ────────────────────── */
+    .module-section-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* ── Back Button ──────────────────────────────── */
+    .back-btn {
+      transition: all 0.2s ease;
+    }
+    .back-btn:hover {
+      background: rgba(255,255,255,0.05);
+      color: #f59e0b;
+    }
+
+    /* ── Speed Buttons ────────────────────────────── */
+    .speed-btn {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      min-height: 2.5rem;
+      min-width: 3.5rem;
+    }
+    .speed-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(245,158,11,0.4) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .speed-btn:hover::after { opacity: 0.15; }
+    .speed-btn.active-speed {
+      background: #f59e0b;
+      color: #0f172a;
+      font-weight: 700;
+      box-shadow: 0 0 18px rgba(245,158,11,0.35), 0 0 40px rgba(245,158,11,0.1);
+      animation: speedPulse 2s ease-in-out infinite;
+    }
+    @keyframes speedPulse {
+      0%, 100% { box-shadow: 0 0 18px rgba(245,158,11,0.35), 0 0 40px rgba(245,158,11,0.1); }
+      50% { box-shadow: 0 0 24px rgba(245,158,11,0.5), 0 0 50px rgba(245,158,11,0.15); }
+    }
+
+    /* ── Shimmer Progress ────────────────────────── */
+    .shimmer-bar {
+      position: relative;
+      overflow: hidden;
+    }
+    .shimmer-bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+      animation: shimmer 2s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+
+    /* ── Watch Progress Bar ──────────────────────── */
+    .watch-complete {
+      background: #f59e0b !important;
+      box-shadow: 0 0 8px rgba(245,158,11,0.3);
+    }
+
+    /* ── Section Markers ────────────────────────── */
+    #section-markers {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .section-marker {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 2px solid #0f172a;
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      z-index: 1;
+    }
+    .section-marker:hover {
+      transform: translate(-50%, -50%) scale(1.6);
+      box-shadow: 0 0 10px rgba(245,158,11,0.5);
+      z-index: 10;
+    }
+
+    /* ── Section List ─────────────────────────────── */
+    #section-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    #section-list:empty { display: none; }
+    .section-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.5rem;
+      border-radius: 0.5rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.2s ease;
+    }
+    .section-item:hover {
+      background: rgba(255,255,255,0.06);
+    }
+    .section-item-label {
+      font-size: 0.75rem;
+      color: #d4d4d8;
+      font-weight: 500;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    .section-item-label:hover { color: #f59e0b; }
+    .section-item-time {
+      font-size: 0.625rem;
+      color: #71717a;
+      font-family: ui-monospace, monospace;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+    .section-item-time:hover { color: #f59e0b; }
+    .section-item-delete {
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: #52525b;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      background: transparent;
+      border: none;
+      line-height: 1;
+    }
+    .section-item-delete:hover {
+      color: #f87171;
+      background: rgba(248,113,113,0.1);
+    }
+
+    /* ── Add Section Button ──────────────────────── */
+    .add-section-btn {
+      font-size: 0.625rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: 0.5rem;
+      padding: 0.375rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .add-section-btn:hover:not(:disabled) {
+      color: #f59e0b;
+      border-color: rgba(245,158,11,0.3);
+      background: rgba(245,158,11,0.06);
+    }
+    .add-section-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+
+    /* ── Checkbox ─────────────────────────────────── */
+    .complete-check {
+      transition: all 0.2s ease;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      width: 1.375rem;
+      height: 1.375rem;
+      border: 2px solid #52525b;
+      border-radius: 0.375rem;
+      background: #27272a;
+      cursor: pointer;
+      background-size: 65% 65%;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    .complete-check:checked {
+      background-color: #f59e0b;
+      border-color: #f59e0b;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f172a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='4 12 9 17 20 6'%3E%3C/polyline%3E%3C/svg%3E");
+    }
+    .complete-check:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* ── WPA Attribution Badge ─────────────────── */
+    .wpa-attribution {
+      font-size: 0.55rem;
+      font-weight: 600;
+      padding: 0.15em 0.45em;
+      border-radius: 9999px;
+      background: rgba(245,158,11,0.12);
+      color: #f59e0b;
+      border: 1px solid rgba(245,158,11,0.2);
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+      cursor: help;
+      transition: background 0.2s ease;
+    }
+    .wpa-attribution:hover {
+      background: rgba(245,158,11,0.22);
+    }
+
+    /* ── Difficulty Badges ───────────────────────── */
+    .diff-badge {
+      font-size: 0.625rem;
+      line-height: 1;
+      padding: 0.25em 0.6em;
+      border-radius: 9999px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border: 1px solid transparent;
+    }
+    .diff-badge.diff-absolute-beginner { background: rgba(16,185,129,0.12); color: #34d399; border-color: rgba(16,185,129,0.2); }
+    .diff-badge.diff-beginner           { background: rgba(56,189,248,0.12); color: #38bdf8; border-color: rgba(56,189,248,0.2); }
+    .diff-badge.diff-early-beginner     { background: rgba(34,211,238,0.12); color: #22d3ee; border-color: rgba(34,211,238,0.2); }
+    .diff-badge.diff-early-intermediate { background: rgba(251,191,36,0.12); color: #fbbf24; border-color: rgba(251,191,36,0.2); }
+    .diff-badge.diff-intermediate       { background: rgba(251,146,60,0.12); color: #fb923c; border-color: rgba(251,146,60,0.2); }
+    .diff-badge.diff-advanced           { background: rgba(244,114,182,0.12); color: #f472b6; border-color: rgba(244,114,182,0.2); }
+
+    /* ── Loop Active State ──────────────────────── */
+    .loop-active {
+      background: rgba(245,158,11,0.15) !important;
+      color: #fbbf24 !important;
+      box-shadow: 0 0 12px rgba(245,158,11,0.2);
+      border-color: rgba(245,158,11,0.3);
+    }
+
+    /* ── Empty State ──────────────────────────────── */
+    .empty-glow {
+      animation: emptyPulse 3s ease-in-out infinite;
+    }
+    @keyframes emptyPulse {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.03); }
+    }
+
+    /* ── No Results ───────────────────────────────── */
+    .no-results-icon {
+      animation: searchPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes searchPulse {
+      0%, 100% { opacity: 0.5; transform: scale(1) rotate(0deg); }
+      50% { opacity: 0.9; transform: scale(1.08) rotate(-3deg); }
+    }
+
+    /* ── Breadcrumb Trail ───────────────────────── */
+    #breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      flex: 1;
+      justify-content: center;
+      overflow: hidden;
+      min-width: 0;
+    }
+    .breadcrumb-item {
+      font-size: 0.7rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: color 0.2s ease;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .breadcrumb-item.clickable {
+      cursor: pointer;
+      color: #71717a;
+    }
+    .breadcrumb-item.clickable:hover {
+      color: #f59e0b;
+    }
+    .breadcrumb-item.current {
+      color: #d4d4d8;
+      font-weight: 600;
+    }
+    .breadcrumb-chevron {
+      color: #3f3f46;
+      font-size: 0.6rem;
+      flex-shrink: 0;
+    }
+    @media (max-width: 640px) {
+      .breadcrumb-item { font-size: 0.6rem; max-width: 100px; }
+      #breadcrumb { gap: 0.1rem; }
+    }
+    @media (hover: none) {
+      .phase-card:active { transform: scale(0.98); }
+      .lesson-card:active { background: rgba(245,158,11,0.06); }
+    }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (max-width: 640px) {
+      .phase-grid { grid-template-columns: 1fr !important; }
+      .lesson-grid { grid-template-columns: 1fr !important; }
+    }
+
+    /* ── Floating Progress Ring ──────────────────── */
+    #progress-ring {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(24,24,27,0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #progress-ring:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    #progress-ring:active {
+      transform: scale(0.95);
+      transition: transform 0.1s ease;
+    }
+    #progress-ring.complete {
+      animation: ringGlow 1.5s ease-in-out infinite;
+    }
+    @keyframes ringGlow {
+      0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 12px rgba(245,158,11,0.3); }
+      50% { box-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 0 28px rgba(245,158,11,0.55); }
+    }
+    #progress-ring svg {
+      width: 52px;
+      height: 52px;
+      transform: rotate(-90deg);
+    }
+    #progress-ring .ring-bg {
+      fill: none;
+      stroke: #27272a;
+      stroke-width: 4;
+    }
+    #progress-ring .ring-fill {
+      fill: none;
+      stroke: #f59e0b;
+      stroke-width: 4;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #progress-ring .ring-pct {
+      position: absolute;
+      font-size: 0.7rem;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      color: #f59e0b;
+      pointer-events: none;
+    }
+
+    /* ── Achievement Toasts ─────────────────────── */
+    #toast-container {
+      position: fixed;
+      top: 4.5rem;
+      right: 1.5rem;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      pointer-events: none;
+      align-items: flex-end;
+    }
+    .achievement-toast {
+      pointer-events: auto;
+      animation: slideInToast 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+      cursor: pointer;
+    }
+    .achievement-toast.dismissing {
+      animation: fadeOutToast 0.3s ease forwards;
+    }
+    @keyframes slideInToast {
+      from { opacity: 0; transform: translateX(100%) scale(0.9); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes fadeOutToast {
+      from { opacity: 1; transform: translateX(0) scale(1); }
+      to   { opacity: 0; transform: translateX(20px) scale(0.9); }
+    }
+
+    /* ── Badge Gallery Modal ────────────────────── */
+    #badge-modal {
+      transition: opacity 0.3s ease;
+    }
+    #badge-modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #badge-modal.show #badge-modal-content {
+      transform: scale(1);
+    }
+    .gallery-badge {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .gallery-badge:hover {
+      transform: translateY(-2px);
+    }
+
+    /* ── Video Control Tabs ──────────────────────── */
+    .tab-btn {
+      transition: all 0.2s ease;
+    }
+    .tab-btn.active {
+      color: #f59e0b;
+      border-bottom-color: #f59e0b;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Global Search Dropdown ────────────────── */
+    #global-search-dropdown {
+      z-index: 60;
+      scrollbar-width: thin;
+      scrollbar-color: #334155 transparent;
+    }
+    #global-search-dropdown::-webkit-scrollbar { width: 4px; }
+    #global-search-dropdown::-webkit-scrollbar-track { background: transparent; }
+    #global-search-dropdown::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.85rem;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover,
+    .search-result-item.active {
+      background: rgba(245,158,11,0.08);
+    }
+    .search-result-item .sr-thumb {
+      width: 52px;
+      height: 30px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #18181b;
+      flex-shrink: 0;
+    }
+    .search-result-item .sr-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .search-result-item .sr-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #d4d4d8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .search-result-item .sr-meta {
+      font-size: 0.58rem;
+      color: #71717a;
+      margin-top: 0.15rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .search-result-empty {
+      padding: 1.5rem 1rem;
+      text-align: center;
+      font-size: 0.7rem;
+      color: #52525b;
+    }
+    .search-result-item .sr-phase-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Video Embed Fallback ─────────────────── */
+    .video-fallback {
+      background: radial-gradient(ellipse 60% 60% at 50% 40%, rgba(239,68,68,0.06) 0%, transparent 70%), #0a0a0a;
+      border-radius: 12px;
+      animation: fadeInFallback 0.4s ease;
+    }
+    @keyframes fadeInFallback {
+      from { opacity: 0; transform: scale(0.97); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Mini Player (Picture-in-Picture) ──────── */
+    #mini-player {
+      position: fixed;
+      bottom: 24px;
+      right: 100px;
+      z-index: 250;
+      width: 320px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0f0f0f;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+      opacity: 0;
+      transform: translateY(16px) scale(0.95);
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    #mini-player.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    #mini-player:hover {
+      box-shadow: 0 12px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(245,158,11,0.15);
+    }
+    #mini-player-handle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: rgba(24,24,27,0.95);
+      cursor: grab;
+      user-select: none;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    #mini-player-handle:active { cursor: grabbing; }
+    #mini-player-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #d4d4d8;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #mini-player-handle .mini-ctrl {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      background: rgba(255,255,255,0.06);
+      color: #a1a1aa;
+      font-size: 0.7rem;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    #mini-player-handle .mini-ctrl:hover {
+      background: rgba(255,255,255,0.12);
+      color: #f4f4f5;
+    }
+    #mini-close:hover { background: rgba(239,68,68,0.2) !important; color: #f87171 !important; }
+    #mini-player-inner {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      cursor: pointer;
+      position: relative;
+    }
+    #mini-player-inner::after {
+      content: 'Click to expand';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.5);
+      color: #d4d4d8;
+      font-size: 0.75rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+      z-index: 2;
+    }
+    #mini-player-inner:hover::after { opacity: 1; }
+    @media (max-width: 640px) {
+      #mini-player {
+        width: 240px;
+        right: 16px;
+        bottom: 90px;
+      }
+      #mini-player-handle { padding: 0.375rem 0.5rem; }
+      #mini-player-title { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body class="text-zinc-200 min-h-screen font-sans antialiased flex flex-col">
+
+  <!-- ═══════════ HEADER ═══════════════════════════════════ -->
+  <header class="border-b border-zinc-800/60 sticky top-0 z-50 flex-shrink-0" style="background: rgba(24,24,27,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);">
+    <div class="max-w-[1800px] mx-auto px-4 sm:px-5 md:px-8 h-14 flex items-center justify-between">
+
+      <!-- Logo -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <span class="text-xl sm:text-2xl lg:text-3xl flex-shrink-0" style="filter: drop-shadow(0 0 8px rgba(245,158,11,0.3));">🎹</span>
+        <h1 class="hidden sm:block text-base sm:text-lg lg:text-2xl font-bold tracking-tight truncate">
+          <span class="text-brand">Gospel</span>
+          <span class="text-zinc-300">Piano</span>
+        </h1>
+      </div>
+
+      <!-- Breadcrumb Trail (hidden on mobile, shown on tablet+) -->
+      <nav id="breadcrumb" class="px-2 lg:px-4 hidden sm:flex">
+        <span class="breadcrumb-item current">Phases</span>
+      </nav>
+
+      <!-- Global Search (all breakpoints) -->
+      <div id="global-search-wrap" class="relative flex-1 max-w-xs mx-2 sm:mx-3">
+        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input id="global-search" type="text" placeholder="Search lessons…" autocomplete="off"
+          class="w-full pl-8 pr-3 py-1.5 bg-zinc-800/50 border border-zinc-700/40 rounded-lg text-zinc-300 text-xs placeholder-zinc-600 focus:border-brand/50 focus:ring-1 focus:ring-brand/30 focus:bg-zinc-800/80 transition outline-none" />
+        <div id="global-search-dropdown" class="absolute top-full left-0 right-0 mt-1.5 rounded-xl border border-zinc-700/50 bg-zinc-900/95 backdrop-blur-xl shadow-2xl overflow-hidden hidden" style="max-height: 360px; overflow-y: auto;"></div>
+      </div>
+
+      <!-- Progress + Reset (minimal on tablet, full on desktop) -->
+      <div class="flex items-center gap-1.5 lg:gap-4 text-xs lg:text-sm text-zinc-400 relative">
+        <a href="/curriculum.html" title="View full curriculum"
+          class="hidden lg:flex items-center gap-1 px-2 py-1 rounded-lg text-zinc-500 hover:text-brand hover:bg-zinc-800/30 transition text-xs font-medium no-underline">
+          <span>📖</span>
+          <span>Curriculum</span>
+        </a>
+        <!-- Badge Gallery Button -->
+        <button id="badge-gallery-btn" title="View Achievements"
+          class="flex items-center gap-0.5 sm:gap-1.5 lg:gap-2 px-1.5 sm:px-2 lg:px-2.5 py-1 lg:py-1.5 rounded-lg font-medium transition cursor-pointer border text-yellow-500 bg-yellow-900/20 border-yellow-900/50 hover:bg-yellow-900/40">
+          <span class="text-xs sm:text-sm lg:text-base">🏆</span>
+          <span id="badge-count" class="text-[0.6rem] sm:text-xs lg:text-sm">0</span>
+        </button>
+        <span id="progress-stats" class="hidden lg:inline text-[0.6rem] lg:text-xs">0/0</span>
+        <div class="hidden lg:block h-1.5 w-20 lg:w-28 bg-zinc-800 rounded-full overflow-hidden">
+          <div id="progress-bar" class="h-full bg-brand rounded-full transition-all duration-700 ease-out shimmer-bar" style="width: 0%"></div>
+        </div>
+        <button id="reset-progress" title="Reset progress"
+          class="hidden lg:flex items-center gap-1 px-2 lg:px-3 py-1 rounded-lg text-[0.65rem] lg:text-xs font-medium text-zinc-600 hover:text-red-400 hover:bg-red-400/10 transition">
+          <span class="text-sm lg:text-base">↻</span>
+          <span>Reset</span>
+        </button>
+
+        <!-- Hamburger Menu (visible below lg) -->
+        <button id="hamburger-btn" class="lg:hidden flex items-center justify-center w-8 h-8 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition flex-shrink-0" title="Menu" aria-label="Toggle menu">
+          <svg id="hamburger-icon" class="w-5 h-5 transition-transform duration-250" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+          <svg id="hamburger-close-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+
+        <!-- Hamburger Dropdown Panel -->
+        <div id="hamburger-dropdown" class="absolute top-full right-4 sm:right-5 mt-2 w-64 rounded-xl border border-zinc-700/50 bg-zinc-900/95 backdrop-blur-xl shadow-2xl p-4 space-y-3 z-[55] opacity-0 -translate-y-2 pointer-events-none transition-all duration-250 ease-out" style="transition-property: opacity, transform;">
+          <div class="text-xs text-zinc-400">
+            <span id="hamburger-progress-text" class="block mb-2">0 / 0 lessons complete</span>
+            <div class="h-2 bg-zinc-800 rounded-full overflow-hidden mb-3">
+              <div id="hamburger-progress-bar" class="h-full bg-brand rounded-full transition-all duration-700 ease-out shimmer-bar" style="width: 0%"></div>
+            </div>
+          </div>
+          <button id="hamburger-reset-btn" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-500 hover:text-red-400 hover:bg-red-400/10 transition">
+            <span>↻</span>
+            <span>Reset Progress</span>
+          </button>
+          <a href="/curriculum.html" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-brand hover:bg-zinc-800/30 transition no-underline">
+            <span>📖</span>
+            <span>View Curriculum</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════ MAIN CONTENT ═══════════════════════════════ -->
+  <main class="flex-1 flex flex-col overflow-hidden max-w-[1800px] mx-auto w-full relative">
+
+    <!-- ─── PHASE VIEW (Home) ──────────────────────────────── -->
+    <div id="phase-view" class="view active">
+      <div class="custom-scroll overflow-y-auto flex-1">
+        <div class="px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10">
+
+          <!-- Hero Section -->
+          <div id="hero-section" class="text-center mb-8 sm:mb-10">
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3">
+              <span class="text-brand">Gospel</span>
+              <span class="text-zinc-200"> Piano</span>
+            </h2>
+            <p class="text-zinc-500 text-sm sm:text-base max-w-xl mx-auto">
+              Progress through five phases — from your first note to leading worship and mastering your ministry.
+            </p>
+          </div>
+
+          <!-- Phase Card Grid -->
+          <div id="phase-grid" class="phase-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6 max-w-5xl mx-auto">
+            <div class="col-span-full flex flex-col items-center justify-center py-16 text-zinc-600 gap-3">
+              <span class="text-3xl animate-pulse">🎵</span>
+              <span class="text-sm">Loading curriculum…</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── LESSON VIEW ────────────────────────────────────── -->
+    <div id="lesson-view" class="view">
+      <!-- View Header -->
+      <div class="flex-shrink-0 border-b border-zinc-800/60 px-4 sm:px-6 md:px-8 py-3 sm:py-4 space-y-3" style="background: rgba(24,24,27,0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+        <div class="flex items-center gap-3">
+          <button id="lesson-back-btn" class="back-btn flex items-center gap-1.5 px-3 py-2 rounded-lg text-zinc-400 text-sm font-medium transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            <span>Back</span>
+          </button>
+          <div class="flex-1 min-w-0">
+            <h2 id="lesson-view-title" class="text-lg sm:text-xl font-bold text-zinc-200 truncate">Lessons</h2>
+          </div>
+        </div>
+        <!-- Search -->
+        <div class="relative max-w-md">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input id="lesson-search" type="text" placeholder="Filter lessons…"
+            class="w-full pl-9 pr-8 py-2 bg-zinc-800/60 border border-zinc-700/50 rounded-lg text-zinc-300 text-sm placeholder-zinc-600 focus:border-brand focus:ring-1 focus:ring-brand/30 transition outline-none" />
+          <button id="lesson-search-clear" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition hidden" title="Clear search">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lesson Card Grid -->
+      <div class="custom-scroll overflow-y-auto flex-1">
+        <div class="px-4 sm:px-6 md:px-8 py-4 sm:py-6">
+          <div id="lesson-grid" class="space-y-6 sm:space-y-8 max-w-5xl mx-auto">
+            <div class="flex flex-col items-center justify-center py-16 text-zinc-600 gap-3">
+              <span class="text-2xl">📋</span>
+              <span class="text-sm">Loading lessons…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── VIDEO VIEW ─────────────────────────────────────── -->
+    <div id="video-view" class="view">
+      <!-- View Header -->
+      <div class="flex-shrink-0 border-b border-zinc-800/60 px-4 sm:px-6 md:px-8 py-3" style="background: rgba(24,24,27,0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <button id="video-back-btn" class="back-btn flex items-center gap-1.5 px-3 py-2 rounded-lg text-zinc-400 text-sm font-medium transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            <span class="hidden sm:inline">Back</span>
+          </button>
+          <div class="flex-1 min-w-0">
+            <h2 id="video-lesson-title" class="text-base sm:text-lg font-semibold text-zinc-200 truncate">—</h2>
+            <p id="video-module-title" class="text-xs text-zinc-500 truncate">—</p>
+          </div>
+          <!-- Next / Previous Lesson Navigation -->
+          <div class="flex items-center gap-1.5 flex-shrink-0">
+            <button id="prev-lesson-btn" disabled
+              class="flex items-center gap-1 px-2.5 py-2 rounded-lg text-zinc-500 text-xs sm:text-sm font-medium transition hover:text-zinc-300 hover:bg-zinc-800/50 disabled:opacity-25 disabled:cursor-not-allowed"
+              title="Previous lesson">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              <span class="hidden sm:inline">Prev</span>
+            </button>
+            <button id="next-lesson-btn" disabled
+              class="flex items-center gap-1 px-2.5 py-2 rounded-lg text-zinc-500 text-xs sm:text-sm font-medium transition hover:text-zinc-300 hover:bg-zinc-800/50 disabled:opacity-25 disabled:cursor-not-allowed"
+              title="Next lesson">
+              <span class="hidden sm:inline">Next</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Player + Controls Side-by-Side -->
+      <div class="flex-1 flex flex-col lg:flex-row overflow-hidden bg-zinc-950">
+
+        <!-- YouTube Player (bigger, fills most of the space) -->
+        <div class="relative w-full lg:flex-1 bg-black flex items-center justify-center min-h-0">
+          <div class="relative w-full" style="aspect-ratio: 16 / 9; max-width: 100%; max-height: 100%;">
+            <div id="player-container" class="absolute inset-0 bg-zinc-900/50 flex items-center justify-center">
+              <div class="text-center empty-glow px-4">
+                <span class="text-5xl sm:text-6xl block mb-3 sm:mb-4" style="filter: drop-shadow(0 0 20px rgba(245,158,11,0.15));">🎹</span>
+                <p class="text-lg sm:text-xl font-semibold text-zinc-400 mb-1">Ready to Learn</p>
+                <p class="text-xs sm:text-sm text-zinc-600">Select a lesson card to start playing</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls Panel (sidebar on desktop, below on mobile) -->
+        <div class="custom-scroll overflow-y-auto flex-shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-800/60 lg:w-80 xl:w-96">
+          <div class="px-4 sm:px-5 py-4 space-y-4">
+
+            <!-- Video Control Tabs -->
+            <div class="flex border-b border-zinc-800/60 gap-0">
+              <button class="tab-btn px-3 sm:px-4 py-2.5 text-[0.65rem] sm:text-xs font-semibold text-zinc-400 border-b-2 border-transparent transition hover:text-zinc-200" data-tab="playback">🎛️ Playback</button>
+              <button class="tab-btn px-3 sm:px-4 py-2.5 text-[0.65rem] sm:text-xs font-semibold text-zinc-400 border-b-2 border-transparent transition hover:text-zinc-200" data-tab="sections">📍 Sections</button>
+              <button class="tab-btn active px-3 sm:px-4 py-2.5 text-[0.65rem] sm:text-xs font-semibold text-zinc-400 border-b-2 border-transparent transition hover:text-zinc-200" data-tab="progress">📊 Progress</button>
+            </div>
+
+            <!-- Speed Controls -->
+            <div id="speed-tab-panel" class="tab-panel space-y-3">
+            <div class="rounded-xl border border-zinc-800/60 p-3 sm:p-4" style="background: rgba(24,24,27,0.6);">
+              <h3 class="text-[0.65rem] uppercase tracking-widest text-zinc-500 font-semibold mb-2">⚡ Playback Speed</h3>
+              <div class="flex flex-wrap gap-1.5">
+                <button data-speed="0.5" class="speed-btn px-3 sm:px-4 py-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 text-xs font-semibold hover:border-zinc-600">0.5×</button>
+                <button data-speed="0.75" class="speed-btn px-3 sm:px-4 py-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 text-xs font-semibold hover:border-zinc-600">0.75×</button>
+                <button data-speed="1" class="speed-btn px-3 sm:px-4 py-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50 text-zinc-300 text-xs font-semibold hover:border-zinc-600 active-speed">1×</button>
+              </div>
+            </div>
+
+            <!-- A/B Loop -->
+            <div id="looper-section" class="rounded-xl border border-zinc-800/60 p-3 sm:p-4" style="background: rgba(24,24,27,0.6);">
+              <h3 class="text-[0.65rem] uppercase tracking-widest text-zinc-500 font-semibold mb-2">🔁 A/B Loop</h3>
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center gap-1.5">
+                  <label for="loop-a" class="text-zinc-500 text-xs font-bold">A</label>
+                  <input id="loop-a" type="text" placeholder="0:00" class="w-14 sm:w-16 px-2 py-1.5 bg-zinc-800/80 border border-zinc-700/60 rounded-lg text-zinc-200 text-xs text-center font-mono focus:border-brand focus:ring-1 focus:ring-brand/40 transition outline-none" />
+                </div>
+                <span class="text-zinc-600 text-xs">→</span>
+                <div class="flex items-center gap-1.5">
+                  <label for="loop-b" class="text-zinc-500 text-xs font-bold">B</label>
+                  <input id="loop-b" type="text" placeholder="0:00" class="w-14 sm:w-16 px-2 py-1.5 bg-zinc-800/80 border border-zinc-700/60 rounded-lg text-zinc-200 text-xs text-center font-mono focus:border-brand focus:ring-1 focus:ring-brand/40 transition outline-none" />
+                </div>
+                <button id="loop-toggle" disabled class="px-3 py-2 rounded-lg bg-zinc-800/80 border border-zinc-700/50 text-zinc-500 text-xs font-semibold transition disabled:opacity-40 hover:border-brand/30">Set Loop</button>
+                <button id="loop-clear" disabled class="px-3 py-2 rounded-lg text-zinc-600 text-xs font-semibold transition disabled:opacity-25 hover:text-zinc-400">Clear</button>
+              </div>
+              <p id="loop-status" class="text-xs mt-2.5 hidden"></p>
+            </div>
+            </div>
+
+            <!-- Sections Tab Panel -->
+            <div id="sections-tab-panel" class="tab-panel space-y-3">
+            <div class="rounded-xl border border-zinc-800/60 p-3 sm:p-4 space-y-3" style="background: rgba(24,24,27,0.6);">
+              <div class="flex items-center gap-2">
+                <h3 class="text-[0.65rem] uppercase tracking-widest text-zinc-500 font-semibold">📍 Sections</h3>
+                <button id="add-section-btn" class="add-section-btn" disabled title="Bookmark current video timestamp">+ Add</button>
+              </div>
+              <div id="section-list"></div>
+              <p id="sections-empty" class="text-xs text-zinc-600">No sections yet — click "+ Add" while watching to bookmark a moment.</p>
+            </div>
+            </div>
+
+            <!-- Progress Tab Panel -->
+            <div id="progress-tab-panel" class="tab-panel active space-y-3">
+            <div class="rounded-xl border border-zinc-800/60 p-3 sm:p-4 space-y-3" style="background: rgba(24,24,27,0.6);">
+              <div class="space-y-2.5">
+                <label id="complete-label" class="flex items-center gap-3 select-none transition" style="opacity:0.4" title="Click to mark as complete">
+                  <input type="checkbox" id="mark-complete" class="complete-check" />
+                  <span class="text-sm text-zinc-400 font-medium">✅ Mark as complete</span>
+                </label>
+                <div id="watch-progress-bar" class="relative h-1.5 bg-zinc-800/80 rounded-full overflow-visible">
+                  <div id="watch-progress-fill" class="h-full bg-cyan-500/60 rounded-full transition-all duration-700 ease-out" style="width: 0%"></div>
+                  <div id="section-markers"></div>
+                </div>
+                <div class="flex items-center justify-between text-[0.6rem] text-zinc-600">
+                  <span>Watch <span id="watch-pct">0%</span></span>
+                  <span>Click to complete</span>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-zinc-800/60">
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-[0.65rem] uppercase tracking-widest text-zinc-500 font-semibold">📝 Practice Notes</h3>
+                  <span id="notes-saved" class="text-[0.6rem] font-semibold hidden" style="color: #34d399;">✓ Saved</span>
+                </div>
+                <textarea id="notes-area" disabled rows="3" placeholder="Jot down observations…"
+                  class="w-full px-3 py-2 bg-zinc-800/60 border border-zinc-700/60 rounded-lg text-zinc-300 text-sm placeholder-zinc-600 resize-y focus:border-brand focus:ring-1 focus:ring-brand/40 transition outline-none disabled:opacity-30 disabled:cursor-not-allowed"></textarea>
+              </div>
+            </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══════════ Toast Container ═══════════════════════════ -->
+  <div id="toast-container"></div>
+
+  <!-- ═══════════ Badge Gallery Modal ═══════════════════════ -->
+  <div id="badge-modal" class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none">
+    <div id="badge-modal-content" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 sm:p-6 max-w-3xl w-full max-h-[85vh] overflow-y-auto custom-scroll shadow-2xl relative scale-95 transition-transform duration-300">
+      <button id="badge-modal-close" class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center bg-zinc-800 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-700 transition text-lg leading-none">&times;</button>
+
+      <div class="mb-6">
+        <h2 class="text-xl sm:text-2xl font-bold text-zinc-200 flex items-center gap-2">
+          <span style="filter: drop-shadow(0 0 8px rgba(245,158,11,0.4));">🏆</span> Achievements Gallery
+        </h2>
+        <p class="text-sm text-zinc-500 mt-1">Earn badges by completing modules and phases.</p>
+      </div>
+
+      <div class="space-y-8">
+        <div>
+          <h3 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-4 border-b border-zinc-800/80 pb-2">Phase Mastery Badges</h3>
+          <div id="gallery-phases" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4"></div>
+        </div>
+        <div>
+          <h3 class="text-xs uppercase tracking-widest text-zinc-500 font-semibold mb-4 border-b border-zinc-800/80 pb-2">Module Badges</h3>
+          <div id="gallery-modules" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Floating Progress Ring ═══════════════════ -->
+  <div id="progress-ring" title="Overall progress">
+    <svg viewBox="0 0 52 52">
+      <circle class="ring-bg" cx="26" cy="26" r="23"/>
+      <circle id="ring-fill" class="ring-fill" cx="26" cy="26" r="23"
+              stroke-dasharray="144.51" stroke-dashoffset="144.51"/>
+    </svg>
+    <span id="ring-pct" class="ring-pct">0%</span>
+  </div>
+
+  <!-- ═══════════ Mini Player (Picture-in-Picture) ════════════ -->
+  <div id="mini-player">
+    <div id="mini-player-handle">
+      <span id="mini-player-title">—</span>
+      <button id="mini-play" class="mini-ctrl" title="Play / Pause">▶</button>
+      <button id="mini-close" class="mini-ctrl" title="Close player">✕</button>
+    </div>
+    <div id="mini-player-inner">
+      <!-- YouTube iframe moved here in PiP mode -->
+    </div>
+  </div>
+
+  <!-- ═══════════ YouTube Iframe API ════════════════════════ -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <!-- ═══════════ Application Logic ════════════════════════ -->
+  <script src="app.js"></script>
+</body>
+</html>
