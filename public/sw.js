@@ -50,8 +50,13 @@ self.addEventListener('fetch', (event) => {
   // Only cache GET requests
   if (event.request.method !== 'GET') return;
 
-  // Don't cache API calls — they need fresh data
   const url = new URL(event.request.url);
+
+  // Skip cross-origin requests (CDN, YouTube, etc.) — let the browser handle them
+  // The SW's fetch() for cross-origin URLs is blocked by CSP connect-src 'self'
+  if (url.origin !== self.location.origin) return;
+
+  // Don't cache API calls — they need fresh data
   if (url.pathname.startsWith('/api/')) return;
 
   // Determine if this is a navigation (HTML) or JS request
