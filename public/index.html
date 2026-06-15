@@ -1004,10 +1004,15 @@
       font-weight: 500;
       opacity: 0;
       transition: opacity 0.25s ease;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: pointer;
       z-index: 2;
     }
     #mini-player-inner:hover::after { opacity: 1; }
+    /* On touch devices, always show the overlay so taps work */
+    @media (hover: none) {
+      #mini-player-inner::after { opacity: 0.6; }
+    }
     @media (max-width: 640px) {
       #mini-player {
         width: 240px;
