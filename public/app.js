@@ -1384,17 +1384,31 @@
   }
 
   // ── Mini Player (Picture-in-Picture) ─────────────────
+  // Store original parent of player-container so we can restore it on exit
+  var pipOrigParent = null;
+
   function enterPipMode() {
     if (!player || !currentLesson) return;
     pipActive = true;
-    // Move the YouTube iframe from the main player container to the mini player
-    const iframe = playerContainer.querySelector('iframe');
-    if (iframe) {
-      miniPlayerInner.innerHTML = '';
-      miniPlayerInner.appendChild(iframe);
-      iframe.style.width = '100%';
-      iframe.style.height = '100%';
-    }
+
+    // Save original parent so we can move player-container back later
+    pipOrigParent = playerContainer.parentNode;
+
+    // Move the PLAYER-CONTAINER (which holds the iframe) into the mini player.
+    // Moving the iframe itself breaks video rendering on iOS (audio continues
+    // but video goes black). Moving the parent container preserves the iframe's
+    // rendering context because the iframe element itself isn't relocated in the DOM.
+    miniPlayerInner.innerHTML = '';
+    miniPlayerInner.style.padding = '0';
+    miniPlayerInner.appendChild(playerContainer);
+    playerContainer.style.position = 'absolute';
+    playerContainer.style.width = '100%';
+    playerContainer.style.height = '100%';
+    playerContainer.style.boxShadow = 'none';
+    playerContainer.style.border = 'none';
+    playerContainer.style.borderRadius = '0';
+    playerContainer.style.background = '#000';
+
     updateMiniPlayerTitle();
     updateMiniPlayButton();
     miniPlayer.classList.add('visible');
@@ -1405,14 +1419,22 @@
     if (!pipActive) return;
     pipActive = false;
     stopMetronome();
-    // Move the iframe back to the main player container
-    const iframe = miniPlayerInner.querySelector('iframe');
-    if (iframe) {
-      playerContainer.innerHTML = '';
-      playerContainer.appendChild(iframe);
-      iframe.style.width = '';
-      iframe.style.height = '';
+
+    // Move player-container back to its original parent in the video view
+    if (pipOrigParent) {
+      // Find the video view's player wrapper area and restore player-container there
+      pipOrigParent.appendChild(playerContainer);
+      // Reset player-container to its original CSS state
+      playerContainer.style.position = '';
+      playerContainer.style.width = '';
+      playerContainer.style.height = '';
+      playerContainer.style.boxShadow = '';
+      playerContainer.style.border = '';
+      playerContainer.style.borderRadius = '';
+      playerContainer.style.background = '';
+      pipOrigParent = null;
     }
+
     miniPlayer.classList.remove('visible');
     if (currentLesson) {
       videoLessonTitle.textContent = currentLesson.title;
@@ -1428,12 +1450,28 @@
     saveCurrentNote();
     pipActive = false;
     miniPlayer.classList.remove('visible');
+
+    // Destroy the YouTube player first
     if (player && typeof player.destroy === 'function') {
       player.destroy();
     }
     player = null;
-    miniPlayerInner.innerHTML = '';
+
+    // Move player-container back if needed
+    if (pipOrigParent) {
+      pipOrigParent.appendChild(playerContainer);
+    }
+
+    // Reset player container
+    playerContainer.style.position = '';
+    playerContainer.style.width = '';
+    playerContainer.style.height = '';
+    playerContainer.style.boxShadow = '';
+    playerContainer.style.border = '';
+    playerContainer.style.borderRadius = '';
+    playerContainer.style.background = '';
     playerContainer.innerHTML = '<div class="text-center empty-glow px-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:3rem;height:3rem;color:rgba(245,158,11,0.5);margin:0 auto 1rem" class="sm:w-14 sm:h-14"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg><p class="text-lg sm:text-xl font-semibold text-zinc-400 mb-1">Ready to Learn</p><p class="text-xs sm:text-sm text-zinc-600">Select a lesson card to start playing</p></div>';
+    pipOrigParent = null;
     currentLesson = null;
     currentModule = null;
     stopWatchMonitoring();
