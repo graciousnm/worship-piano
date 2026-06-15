@@ -1953,10 +1953,11 @@
   const pwaIosModal = document.getElementById('pwa-ios-modal');
   const pwaIosModalClose = document.getElementById('pwa-ios-modal-close');
 
-  // iOS detection: beforeinstallprompt is Chrome-only, not supported on iOS/iPad
+  // iOS detection: beforeinstallprompt is Chrome-only, not supported on iOS/iPad.
+  // Using navigator.standalone (iOS-only property) is more reliable than user agent,
+  // because iPadOS 13+ sends a desktop Mac user agent.
   function isIOS() {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-           typeof window.navigator.standalone !== 'undefined';
+    return typeof window.navigator.standalone !== 'undefined';
   }
 
   function showPwaBanner(iOS) {
