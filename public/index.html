@@ -1337,16 +1337,18 @@
     // Register service worker for PWA offline support
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').then(function (reg) {
-        console.log('SW registered:', reg.scope);
-        // When a new SW takes over, reload to ensure fresh code
-        reg.addEventListener('updatefound', function () {
-          const newSW = reg.installing;
-          newSW.addEventListener('statechange', function () {
-            if (this.state === 'activated') {
-              window.location.reload();
-            }
+        // Only auto-reload on SW updates, not on first install
+        if (navigator.serviceWorker.controller) {
+          reg.addEventListener('updatefound', function () {
+            const newSW = reg.installing;
+            newSW.addEventListener('statechange', function () {
+              if (this.state === 'activated') {
+                window.location.reload();
+              }
+            });
           });
-        });
+        }
+        console.log('SW registered:', reg.scope);
       }).catch(function (err) {
         console.warn('SW registration failed:', err);
       });
