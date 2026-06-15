@@ -107,7 +107,7 @@
   const hamburgerProgressText = document.getElementById('hamburger-progress-text');
   const hamburgerProgressBar = document.getElementById('hamburger-progress-bar');
   const hamburgerResetBtn = document.getElementById('hamburger-reset-btn');
-  const installPwaBtn = document.getElementById('install-pwa-btn');
+
 
   // ── State ─────────────────────────────────────────────────
   let player = null;
@@ -1937,8 +1937,35 @@
     if (pendingVideoId) { const vid = pendingVideoId; pendingVideoId = null; createPlayer(vid); }
   };
 
-  // ── PWA Install Prompt ─────────────────────────────────
+  // ── PWA Install Banner ─────────────────────────────────
   let deferredPrompt = null;
+  let pwaBannerTimer = null;
+  const BANNER_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  const pwaBanner = document.getElementById('pwa-install-banner');
+  const pwaInstallBtn = document.getElementById('pwa-install-btn');
+  const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
+
+  function showPwaBanner() {
+    if (!pwaBanner || !deferredPrompt) return;
+    pwaBanner.classList.remove('dismissed');
+    pwaBanner.classList.add('visible');
+    // Auto-dismiss after 5 minutes
+    clearTimeout(pwaBannerTimer);
+    pwaBannerTimer = setTimeout(function () {
+      hidePwaBanner();
+    }, BANNER_DURATION);
+  }
+
+  function hidePwaBanner() {
+    if (!pwaBanner) return;
+    pwaBanner.classList.add('dismissed');
+    clearTimeout(pwaBannerTimer);
+    // Clean up after transition
+    setTimeout(function () {
+      pwaBanner.classList.remove('visible', 'dismissed');
+    }, 400);
+  }
 
   function initPwaInstall() {
     // Don't show if already running as installed app
@@ -1950,28 +1977,32 @@
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
       deferredPrompt = e;
-      if (installPwaBtn) {
-        installPwaBtn.classList.remove('hidden');
-      }
+      showPwaBanner();
     });
 
     window.addEventListener('appinstalled', function () {
       deferredPrompt = null;
-      if (installPwaBtn) {
-        installPwaBtn.classList.add('hidden');
-      }
+      hidePwaBanner();
     });
 
-    if (installPwaBtn) {
-      installPwaBtn.addEventListener('click', async function () {
+    if (pwaInstallBtn) {
+      pwaInstallBtn.addEventListener('click', async function () {
         if (!deferredPrompt) return;
         deferredPrompt.prompt();
         const result = await deferredPrompt.userChoice;
         deferredPrompt = null;
-        // Hide the button regardless of choice
-        installPwaBtn.classList.add('hidden');
+        hidePwaBanner();
       });
     }
+
+    if (pwaDismissBtn) {
+      pwaDismissBtn.addEventListener('click', function () {
+        hidePwaBanner();
+      });
+    }
+
+    // Also dismiss if user taps outside the banner (on the page)
+    // but NOT on click-away since it's a bottom banner — just keep it simple
   }
 
   // ── Init ─────────────────────────────────────────────────
