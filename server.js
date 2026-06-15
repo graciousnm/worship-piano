@@ -484,7 +484,7 @@ app.use((err, req, res, next) => {
 
 // ── Start Server ───────────────────────────────────────────
 const server = app.listen(PORT, () => {
-  console.log(`🎹 Gospel Piano server running at http://localhost:${PORT}`);
+  console.log(`🎹 Worship Piano server running at http://localhost:${PORT}`);
 });
 
 // ── Scheduled RSS Sync (every 6 hours) ────────────────────

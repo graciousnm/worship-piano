@@ -1,18 +1,47 @@
 // ═══════════════════════════════════════════════════════════════
-//  Gospel Piano Learning Platform — app.js
+//  Worship Piano Learning Platform — app.js
 //  Card-based 3-tier navigation: Phases → Lessons → Video
 // ═══════════════════════════════════════════════════════════════
 
 (function () {
   'use strict';
 
+  // ── SVG Icons ────────────────────────────────────────
+  const ICONS = {
+    leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>',
+    wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+    piano: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg>',
+    rocket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15-3-3a6 6 0 0 1 6-6c.67 0 1.34.09 2 .27C15.83 5.56 16 3.84 16 2c0 0 2 2 2 5 .27.66.27 1.33.27 2a6 6 0 0 1-6 6z"/><path d="M9 15-6-6"/><path d="M15 9-6 6"/></svg>',
+    crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M2.5 16h19"/><path d="M5 20h14"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><polyline points="20 6 9 17 4 12"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    arrowLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>',
+    arrowRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+    chevronRight: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><polyline points="9 18 15 12 9 6"/></svg>',
+    chevronLeft: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><polyline points="15 18 9 12 15 6"/></svg>',
+    trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>',
+    music: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+    heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+    mapPin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+    barChart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
+    zap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+    repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+    search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    externalLink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+    youtube: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" style="width:1em;height:1em"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>',
+  };
+
   // ── Phase Definitions ──────────────────────────────────
   const PHASES = [
-    { name: 'Foundations', icon: '🌱', range: [0, 2], color: '#34d399', desc: 'Notes, chords, inversions & your first worship songs' },
-    { name: 'Worship Foundations', icon: '🔧', range: [3, 8], color: '#38bdf8', desc: 'Rhythm patterns, 7th chords, sus/add chords, song tutorials, techniques & riffs' },
-    { name: 'Contemporary Worship', icon: '🎹', range: [9, 12], color: '#fb923c', desc: 'Passing chords, reharmonization & modern gospel style' },
-    { name: 'Worship Leading', icon: '🚀', range: [13, 14], color: '#f472b6', desc: 'Rootless voicings, improvisation & performance skills' },
-    { name: 'Mastery & Ministry', icon: '👑', range: [15, 16], color: '#c084fc', desc: 'Artist styles, worship leadership & service flow' },
+    { name: 'Foundations', icon: ICONS.leaf, range: [0, 2], color: '#34d399', desc: 'Notes, chords, inversions & your first worship songs' },
+    { name: 'Worship Foundations', icon: ICONS.wrench, range: [3, 8], color: '#38bdf8', desc: 'Rhythm patterns, 7th chords, sus/add chords, song tutorials, techniques & riffs' },
+    { name: 'Contemporary Worship', icon: ICONS.piano, range: [9, 12], color: '#fb923c', desc: 'Passing chords, reharmonization & modern gospel style' },
+    { name: 'Worship Leading', icon: ICONS.rocket, range: [13, 14], color: '#f472b6', desc: 'Rootless voicings, improvisation & performance skills' },
+    { name: 'Mastery & Ministry', icon: ICONS.crown, range: [15, 16], color: '#c084fc', desc: 'Artist styles, worship leadership & service flow' },
   ];
 
   // ── DOM References ────────────────────────────────────────
@@ -427,7 +456,7 @@
               <p class="text-xs sm:text-sm text-zinc-500 mt-0.5">${phase.desc}</p>
             </div>
           </div>
-          ${isDone ? '<span class="flex-shrink-0 text-lg" title="Complete!">🏆</span>' : ''}
+          ${isDone ? '<span class="flex-shrink-0 text-brand" style="width:1.5rem;height:1.5rem" title="Complete!">' + ICONS.trophy + '</span>' : ''}
         </div>
 
         <div class="flex items-center gap-4 text-xs text-zinc-500">
@@ -532,7 +561,7 @@
       <div class="module-section">
         <div class="module-section-header flex items-center gap-3 px-3 py-2.5 rounded-lg mb-3" style="background: rgba(24,24,27,0.9); border: 1px solid rgba(255,255,255,0.04);">
           <span class="text-sm font-semibold text-zinc-300 truncate">${mod.title}</span>
-          ${mod.sort_order <= 6 ? '<span class="wpa-attribution" title="Videos from Worship Piano Academy">📺 WPA</span>' : ''}
+          ${mod.sort_order <= 6 ? '<span class="wpa-attribution" title="Videos from Worship Piano Academy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.65rem;height:0.65rem;display:inline-block;vertical-align:middle;margin-right:2px"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> WPA</span>' : ''}
           ${mod.difficulty ? `<span class="diff-badge diff-${(mod.difficulty || '').toLowerCase().replace(/\s+/g, '-').replace(/[\/+]/g, '')}">${mod.difficulty}</span>` : ''}
           <span class="text-xs text-zinc-600 ml-auto flex-shrink-0">${modDone}/${mod.lessons.length}</span>
         </div>
@@ -579,7 +608,7 @@
     if (totalVisible === 0) {
       html = `
       <div class="flex flex-col items-center justify-center py-16 text-zinc-600 gap-3">
-        <span class="text-3xl no-results-icon">🔍</span>
+        <span style="width:2rem;height:2rem;color:#52525b" class="no-results-icon">${ICONS.search}</span>
         <p class="font-medium text-zinc-500">No results found</p>
         <p class="text-xs text-zinc-700">Try a different keyword</p>
       </div>`;
@@ -634,11 +663,10 @@
 
     if (!nextIncomplete && total > 0) {
       // All done!
-      heroSection.innerHTML = `
-        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand/10 border border-brand/20 mb-4">
-          <span class="text-lg">🏆</span>
-          <span class="text-xs sm:text-sm text-brand font-semibold">All ${total} lessons complete!</span>
-        </div>
+      heroSection.innerHTML = `          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand/10 border border-brand/20 mb-4">
+            <span style="width:1.25rem;height:1.25rem;color:#f59e0b">${ICONS.trophy}</span>
+            <span class="text-xs sm:text-sm text-brand font-semibold">All ${total} lessons complete!</span>
+          </div>
         <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mb-3">
           <span class="text-brand">Amazing</span>
           <span class="text-zinc-200"> Work!</span>
@@ -664,7 +692,7 @@
         </h2>
         <button id="hero-cta" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm bg-brand text-zinc-900 hover:bg-brand-light transition shadow-lg shadow-brand/20 hover:shadow-brand/30 active:scale-95 mb-3"
                 data-phase-idx="${nextPhaseIdx}" data-lesson-id="${nextIncomplete.id}" data-module-id="${nextMod ? nextMod.id : ''}">
-          ${nextPhase ? nextPhase.icon : '🎹'} Jump back in: <span class="underline underline-offset-2">${escapeHtml(nextIncomplete.title)}</span>
+          ${nextPhase ? '<span style="width:1.25rem;height:1.25rem">' + nextPhase.icon + '</span>' : '<span style="width:1.25rem;height:1.25rem">' + ICONS.piano + '</span>'} Jump back in: <span class="underline underline-offset-2">${escapeHtml(nextIncomplete.title)}</span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </button>
         <p class="text-zinc-500 text-xs sm:text-sm">${nextPhase ? nextPhase.name + ' phase' : ''} · ${nextMod ? escapeHtml(nextMod.title) : ''}</p>`;
@@ -700,7 +728,7 @@
     const prompt = document.createElement('div');
     prompt.className = 'achievement-toast bg-zinc-800/90 backdrop-blur border border-brand/30 rounded-xl p-3 flex items-center gap-3 shadow-2xl cursor-pointer';
     prompt.style.cssText = 'width:300px;';
-    prompt.innerHTML = '<span class="text-lg flex-shrink-0">✅</span><div class="flex-1 min-w-0"><p class="text-xs text-zinc-400">Lesson complete!</p><p class="text-sm font-semibold text-zinc-200 truncate">Next: ' + escapeHtml(next.lesson.title) + '</p></div><button class="next-prompt-btn flex-shrink-0 px-3 py-1.5 rounded-lg bg-brand text-zinc-900 text-xs font-semibold hover:bg-brand-light transition">Next →</button>';
+    prompt.innerHTML = '<span style="width:1.25rem;height:1.25rem;color:#34d399" class="flex-shrink-0">' + ICONS.check + '</span><div class="flex-1 min-w-0"><p class="text-xs text-zinc-400">Lesson complete!</p><p class="text-sm font-semibold text-zinc-200 truncate">Next: ' + escapeHtml(next.lesson.title) + '</p></div><button class="next-prompt-btn flex-shrink-0 px-3 py-1.5 rounded-lg bg-brand text-zinc-900 text-xs font-semibold hover:bg-brand-light transition">Next →</button>';
     let autoDismiss = setTimeout(function () { dismissToast(prompt); }, 8000);
     prompt.addEventListener('click', function (e) {
       if (e.target.closest('.next-prompt-btn')) {
@@ -761,7 +789,7 @@
   }
 
   function resetPlayerPlaceholder() {
-    playerContainer.innerHTML = '<div class="text-center empty-glow px-4"><span class="text-5xl sm:text-6xl block mb-3 sm:mb-4" style="filter: drop-shadow(0 0 20px rgba(245,158,11,0.15));">🎹</span><p class="text-lg sm:text-xl font-semibold text-zinc-400 mb-1">Ready to Learn</p><p class="text-xs sm:text-sm text-zinc-600">Select a lesson card to start playing</p></div>';
+    playerContainer.innerHTML = '<div class="text-center empty-glow px-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:3rem;height:3rem;color:rgba(245,158,11,0.5);margin:0 auto 1rem" class="sm:w-14 sm:h-14"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg><p class="text-lg sm:text-xl font-semibold text-zinc-400 mb-1">Ready to Learn</p><p class="text-xs sm:text-sm text-zinc-600">Select a lesson card to start playing</p></div>';
   }
 
   function showVideoFallback(videoId) {
@@ -769,7 +797,7 @@
     const watchUrl = 'https://www.youtube.com/watch?v/' + videoId;
     playerContainer.innerHTML = `
       <div class="video-fallback flex flex-col items-center justify-center text-center px-6 py-10 gap-4">
-        <span class="text-5xl">📺</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:2.5rem;height:2.5rem;color:#ef4444"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         <div>
           <p class="text-base sm:text-lg font-semibold text-zinc-300 mb-1">Video unavailable in embedded player</p>
           <p class="text-xs sm:text-sm text-zinc-500 max-w-sm">This video's uploader has disabled embedding. You can still watch it directly on YouTube.</p>
@@ -791,6 +819,7 @@
 
   function stopPlayback() {
     stopWatchMonitoring();
+    stopMetronome();
     if (player && typeof player.pauseVideo === 'function') {
       player.pauseVideo();
     }
@@ -974,10 +1003,9 @@
 
     // Check Module Badge — all lessons in this module complete?
     const modId = 'module_' + targetMod.id;
-    const modEarned = targetMod.lessons.every(l => completedLessons.has(l.id));
-    if (modEarned && !achievements.has(modId)) {
-      grantAchievement(modId, 'Module Complete!', targetMod.title, '📦', '#fbbf24');
-    }
+    const modEarned = targetMod.lessons.every(l => completedLessons.has(l.id));      if (modEarned && !achievements.has(modId)) {
+        grantAchievement(modId, 'Module Complete!', targetMod.title, ICONS.trophy, '#fbbf24');
+      }
 
     // Find which phase this module belongs to
     let targetPhaseIdx = -1;
@@ -1064,7 +1092,7 @@
       return `
       <div class="gallery-badge border rounded-xl p-3 flex items-center gap-3 ${isEarned ? 'bg-zinc-800/50' : 'bg-zinc-900/50 opacity-40'}"
            style="border-color: ${isEarned ? '#fbbf24' : '#3f3f46'}">
-        <span class="text-2xl flex-shrink-0" style="filter: ${isEarned ? 'none' : 'grayscale(1)'}">📦</span>
+        <span class="flex-shrink-0" style="width:1.5rem;height:1.5rem;color:#fbbf24;filter: ${isEarned ? 'none' : 'grayscale(1)'}">${ICONS.trophy}</span>
         <div class="flex-1 min-w-0">
           <span class="text-xs font-semibold leading-snug line-clamp-2" style="color: ${isEarned ? '#d4d4d8' : '#71717a'}">${escapeHtml(m.title)}</span>
         </div>
@@ -1112,17 +1140,17 @@
     const a = parseTime(loopAInput.value);
     const b = parseTime(loopBInput.value);
     if (a === null || b === null) {
-      loopStatus.textContent = '⚠ Enter valid timestamps (e.g. 0:45 and 1:30)';
+      loopStatus.textContent = '⚠\uFE0F Enter valid timestamps (e.g. 0:45 and 1:30)';
       loopStatus.classList.remove('hidden');
       return;
     }
     if (a >= b) {
-      loopStatus.textContent = '⚠ Point A must be before Point B';
+      loopStatus.textContent = '⚠\uFE0F Point A must be before Point B';
       loopStatus.classList.remove('hidden');
       return;
     }
     loopA = a; loopB = b;
-    loopStatus.textContent = `🔁 Looping ${formatTime(a)} → ${formatTime(b)}`;
+    loopStatus.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:0.75rem;height:0.75rem;display:inline-block;vertical-align:middle;margin-right:2px"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg> Looping ${formatTime(a)} → ${formatTime(b)}`;
     loopStatus.classList.remove('hidden', 'text-red-400');
     loopStatus.classList.add('text-brand');
     loopToggle.textContent = 'Looping…';
@@ -1153,6 +1181,190 @@
       loopToggle.classList.remove('cursor-not-allowed', 'disabled:opacity-50');
       if (loopA === null) { loopToggle.classList.remove('loop-active'); loopToggle.textContent = 'Set Loop'; }
     }
+  }
+
+  // ── Metronome ────────────────────────────────────────────
+  let metroCtx = null;
+  let metroIsPlaying = false;
+  let metroBpm = 80;
+  let metroBeatsPerBar = 4;
+  let metroBeatCount = 0;
+  let metroNextTime = 0;
+  let metroInterval = null;
+  let metroVolume = 0.6;
+  let tapTimes = [];
+  const MAX_TAP_INTERVAL = 2000;
+  const MIN_TAP_INTERVAL = 200;
+
+  const metroBpmSlider = document.getElementById('metro-bpm-slider');
+  const metroBpmInput = document.getElementById('metro-bpm-input');
+  const metroStartBtn = document.getElementById('metro-start-btn');
+  const metroStartIcon = document.getElementById('metro-start-icon');
+  const metroStartLabel = document.getElementById('metro-start-label');
+  const metroTapBtn = document.getElementById('metro-tap-btn');
+  const metroTs = document.getElementById('metro-ts');
+  const metroVolumeSlider = document.getElementById('metro-volume');
+  const metroBeatEl = document.getElementById('metronome-beat');
+
+  function initMetronome() {
+    if (!metroBpmSlider || !metroBpmInput || !metroStartBtn) return;
+
+    // BPM slider ↔ input sync
+    metroBpmSlider.addEventListener('input', function () {
+      metroBpm = parseInt(this.value, 10);
+      metroBpmInput.value = metroBpm;
+    });
+    metroBpmInput.addEventListener('change', function () {
+      let val = parseInt(this.value, 10);
+      if (isNaN(val)) val = 80;
+      val = Math.max(30, Math.min(240, val));
+      metroBpm = val;
+      this.value = val;
+      metroBpmSlider.value = val;
+    });
+
+    // Start / Stop
+    metroStartBtn.addEventListener('click', function () {
+      if (metroIsPlaying) {
+        stopMetronome();
+      } else {
+        startMetronome();
+      }
+    });
+
+    // Tap tempo
+    if (metroTapBtn) {
+      metroTapBtn.addEventListener('click', function () {
+        const now = Date.now();
+        // Clear old taps
+        tapTimes = tapTimes.filter(t => now - t < MAX_TAP_INTERVAL);
+        // Only count taps at least MIN_TAP_INTERVAL apart
+        if (tapTimes.length === 0 || now - tapTimes[tapTimes.length - 1] > MIN_TAP_INTERVAL) {
+          tapTimes.push(now);
+        }
+        if (tapTimes.length >= 2) {
+          const intervals = [];
+          for (let i = 1; i < tapTimes.length; i++) {
+            intervals.push(tapTimes[i] - tapTimes[i - 1]);
+          }
+          const avg = intervals.reduce((s, v) => s + v, 0) / intervals.length;
+          let bpm = Math.round(60000 / avg);
+          bpm = Math.max(30, Math.min(240, bpm));
+          metroBpm = bpm;
+          metroBpmSlider.value = bpm;
+          metroBpmInput.value = bpm;
+          // Flash the tap button to give feedback
+          this.classList.add('text-brand');
+          setTimeout(() => this.classList.remove('text-brand'), 200);
+        }
+      });
+    }
+
+    // Time signature
+    if (metroTs) {
+      metroTs.addEventListener('change', function () {
+        metroBeatsPerBar = parseInt(this.value, 10);
+        metroBeatCount = 0;
+      });
+    }
+
+    // Volume
+    if (metroVolumeSlider) {
+      metroVolumeSlider.addEventListener('input', function () {
+        metroVolume = parseInt(this.value, 10) / 100;
+      });
+    }
+  }
+
+  function startMetronome() {
+    try {
+      if (!metroCtx) {
+        metroCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (metroCtx.state === 'suspended') {
+        metroCtx.resume();
+      }
+    } catch (e) {
+      console.warn('Metronome: AudioContext not available');
+      return;
+    }
+
+    metroIsPlaying = true;
+    metroBeatCount = 0;
+    metroNextTime = metroCtx.currentTime + 0.05;
+
+    if (metroStartIcon) metroStartIcon.textContent = '⏸';
+    if (metroStartLabel) metroStartLabel.textContent = 'Stop';
+    metroStartBtn.classList.add('loop-active');
+
+    // Schedule beats ahead
+    scheduleMetronome();
+
+    // Also use a visual timer as backup
+    metroInterval = setInterval(scheduleMetronome, 50);
+  }
+
+  function stopMetronome() {
+    metroIsPlaying = false;
+    if (metroInterval) {
+      clearInterval(metroInterval);
+      metroInterval = null;
+    }
+    if (metroStartIcon) metroStartIcon.textContent = '▶';
+    if (metroStartLabel) metroStartLabel.textContent = 'Start';
+    metroStartBtn.classList.remove('loop-active');
+    metroBeatEl.classList.remove('active', 'accent');
+  }
+
+  function scheduleMetronome() {
+    if (!metroIsPlaying || !metroCtx) return;
+
+    const lookAhead = 0.1; // seconds ahead to schedule
+    const intervalSec = 60.0 / metroBpm;
+
+    while (metroNextTime < metroCtx.currentTime + lookAhead) {
+      const beatInBar = metroBeatCount % metroBeatsPerBar;
+      const isAccent = beatInBar === 0;
+
+      // Schedule click
+      playClick(metroCtx, metroNextTime, metroVolume, isAccent);
+
+      // Schedule visual flash
+      scheduleBeatFlash(metroNextTime, isAccent);
+
+      metroNextTime += intervalSec;
+      metroBeatCount++;
+    }
+  }
+
+  function playClick(ctx, time, volume, isAccent) {
+    // Create a short click sound using an oscillator
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const freq = isAccent ? 1200 : 900;
+    const clickVol = isAccent ? volume * 0.5 : volume * 0.35;
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, time);
+    gain.gain.setValueAtTime(clickVol, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+
+    osc.start(time);
+    osc.stop(time + 0.04);
+  }
+
+  function scheduleBeatFlash(time, isAccent) {
+    const delay = Math.max(0, (time - metroCtx.currentTime) * 1000);
+    setTimeout(function () {
+      if (!metroIsPlaying) return;
+      metroBeatEl.classList.remove('active', 'accent');
+      // Force reflow for re-animation
+      void metroBeatEl.offsetWidth;
+      metroBeatEl.classList.add(isAccent ? 'accent' : 'active');
+    }, delay);
   }
 
   // ── Speed Controls ────────────────────────────────────────
@@ -1191,6 +1403,7 @@
   function exitPipMode() {
     if (!pipActive) return;
     pipActive = false;
+    stopMetronome();
     // Move the iframe back to the main player container
     const iframe = miniPlayerInner.querySelector('iframe');
     if (iframe) {
@@ -1219,11 +1432,12 @@
     }
     player = null;
     miniPlayerInner.innerHTML = '';
-    playerContainer.innerHTML = '<div class="text-center empty-glow px-4"><span class="text-5xl sm:text-6xl block mb-3 sm:mb-4" style="filter: drop-shadow(0 0 20px rgba(245,158,11,0.15));">🎹</span><p class="text-lg sm:text-xl font-semibold text-zinc-400 mb-1">Ready to Learn</p><p class="text-xs sm:text-sm text-zinc-600">Select a lesson card to start playing</p></div>';
+    playerContainer.innerHTML = '<div class="text-center empty-glow px-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:3rem;height:3rem;color:rgba(245,158,11,0.5);margin:0 auto 1rem" class="sm:w-14 sm:h-14"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg><p class="text-lg sm:text-xl font-semibold text-zinc-400 mb-1">Ready to Learn</p><p class="text-xs sm:text-sm text-zinc-600">Select a lesson card to start playing</p></div>';
     currentLesson = null;
     currentModule = null;
     stopWatchMonitoring();
     stopLoopMonitoring();
+    stopMetronome();
   }
 
   function updateMiniPlayerTitle() {
@@ -1730,6 +1944,7 @@
     loadSections();
     loadAchievements();
     bindEvents();
+    initMetronome();
     loadModules();
   }
 

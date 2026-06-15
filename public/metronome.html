@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Metronome — Worship Piano</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: '#f59e0b', light: '#fbbf24', dark: '#d97706' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245,158,11,0.05) 0%, transparent 70%), #09090b;
+      min-height: 100vh;
+    }
+    /* Beat indicator */
+    #beat-indicator {
+      transition: background 0.07s ease, box-shadow 0.07s ease, transform 0.07s ease;
+    }
+    #beat-indicator.accent {
+      background: #f472b6 !important;
+      box-shadow: 0 0 40px rgba(244,114,182,0.5), 0 0 80px rgba(244,114,182,0.2) !important;
+      transform: scale(1.08);
+    }
+    #beat-indicator.beat {
+      background: #f59e0b !important;
+      box-shadow: 0 0 30px rgba(245,158,11,0.4), 0 0 60px rgba(245,158,11,0.15) !important;
+      transform: scale(1.05);
+    }
+    /* Beat counter dots */
+    .beat-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3f3f46;
+      transition: all 0.12s ease;
+    }
+    .beat-dot.active {
+      background: #f59e0b;
+      box-shadow: 0 0 12px rgba(245,158,11,0.5);
+    }
+    .beat-dot.accent {
+      background: #f472b6;
+      box-shadow: 0 0 14px rgba(244,114,182,0.5);
+    }
+    /* Range slider styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 6px;
+      background: #3f3f46;
+      border-radius: 3px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 3px solid #09090b;
+      box-shadow: 0 0 8px rgba(245,158,11,0.3);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 3px solid #09090b;
+    }
+    /* Tap button flash */
+    @keyframes tapFlash {
+      0% { background: rgba(245,158,11,0.2); }
+      100% { background: transparent; }
+    }
+    .tap-flash {
+      animation: tapFlash 0.25s ease;
+    }
+    /* BPM number */
+    #bpm-display {
+      font-variant-numeric: tabular-nums;
+    }
+    /* Start button pulse when playing */
+    @keyframes playingPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.3); }
+      50% { box-shadow: 0 0 40px rgba(245,158,11,0.5); }
+    }
+    #start-btn.playing {
+      animation: playingPulse 1.5s ease-in-out infinite;
+    }
+    /* Beat bar visualizer */
+    #beat-bar-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 60px;
+    }
+    .beat-bar {
+      flex: 1;
+      max-width: 16px;
+      border-radius: 4px 4px 0 0;
+      background: #27272a;
+      transition: all 0.1s ease;
+    }
+    .beat-bar.active {
+      background: #f59e0b;
+      box-shadow: 0 0 8px rgba(245,158,11,0.3);
+    }
+    .beat-bar.accent {
+      background: #f472b6;
+      box-shadow: 0 0 10px rgba(244,114,182,0.3);
+    }
+    @media (max-width: 640px) {
+      #beat-indicator {
+        width: 120px !important;
+        height: 120px !important;
+      }
+      #bpm-display {
+        font-size: 4rem !important;
+      }
+      #beat-bar-container {
+        height: 40px !important;
+      }
+      .beat-bar {
+        max-width: 12px !important;
+      }
+    }
+  </style>
+</head>
+<body class="text-zinc-200 font-sans antialiased flex flex-col min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-zinc-800/60 flex-shrink-0" style="background: rgba(24,24,27,0.85); backdrop-filter: blur(16px);">
+    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 no-underline hover:opacity-80 transition">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" style="color: rgba(245,158,11,0.7);"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg>
+        <span class="hidden sm:inline text-base font-bold"><span class="text-brand">Worship</span> <span class="text-zinc-300">Piano</span></span>
+      </a>
+      <h1 class="text-sm sm:text-base font-semibold text-zinc-400 flex items-center gap-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Metronome</h1>
+      <a href="/" class="text-xs text-zinc-600 hover:text-brand transition no-underline">← Back</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex items-center justify-center px-4 py-6">
+    <div class="w-full max-w-md mx-auto flex flex-col items-center gap-6 sm:gap-8">
+
+      <!-- BPM Display -->
+      <div class="text-center">
+        <span id="bpm-display" class="text-6xl sm:text-7xl font-black tracking-tighter text-zinc-100" style="font-variant-numeric: tabular-nums;">80</span>
+        <p class="text-xs text-zinc-600 mt-1 font-medium uppercase tracking-widest">Beats Per Minute</p>
+      </div>
+
+      <!-- Beat Indicator Circle -->
+      <div id="beat-indicator" class="w-40 h-40 sm:w-48 sm:h-48 rounded-full bg-zinc-800/60 border border-zinc-700/30 flex items-center justify-center transition-all duration-75" style="box-shadow: none;">
+        <span id="beat-count" class="text-3xl sm:text-4xl font-bold text-zinc-600 tabular-nums">1</span>
+      </div>
+
+      <!-- Beat Bars Visualizer -->
+      <div id="beat-bar-container" class="w-full max-w-xs justify-center">
+        <div class="beat-bar" style="height:60%"></div>
+        <div class="beat-bar" style="height:40%"></div>
+        <div class="beat-bar" style="height:80%"></div>
+        <div class="beat-bar" style="height:30%"></div>
+        <div class="beat-bar" style="height:55%"></div>
+        <div class="beat-bar" style="height:45%"></div>
+        <div class="beat-bar" style="height:70%"></div>
+        <div class="beat-bar" style="height:35%"></div>
+      </div>
+
+      <!-- Beat Dots (time signature indicator) -->
+      <div id="beat-dots" class="flex items-center justify-center gap-2">
+        <div class="beat-dot"></div>
+        <div class="beat-dot"></div>
+        <div class="beat-dot"></div>
+        <div class="beat-dot"></div>
+      </div>
+
+      <!-- Start / Stop Button -->
+      <button id="start-btn"
+        class="w-full max-w-xs py-4 rounded-2xl font-bold text-lg bg-brand text-zinc-900 hover:bg-brand-light transition active:scale-[0.97] shadow-lg shadow-brand/20">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle mr-1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start
+      </button>
+
+      <!-- BPM Controls -->
+      <div class="w-full max-w-xs space-y-3">
+        <div class="flex items-center gap-3">
+          <button id="bpm-down" class="w-12 h-12 rounded-xl bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition text-lg font-bold flex items-center justify-center active:scale-90">–</button>
+          <input id="bpm-slider" type="range" min="30" max="240" value="80" class="flex-1" />
+          <button id="bpm-up" class="w-12 h-12 rounded-xl bg-zinc-800/80 border border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition text-lg font-bold flex items-center justify-center active:scale-90">+</button>
+        </div>
+        <!-- BPM quick presets -->
+        <div class="flex flex-wrap justify-center gap-1.5">
+          <button class="bpm-preset px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/30 text-zinc-500 text-xs hover:text-zinc-300 hover:border-zinc-600 transition" data-bpm="40">Largo</button>
+          <button class="bpm-preset px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/30 text-zinc-500 text-xs hover:text-zinc-300 hover:border-zinc-600 transition" data-bpm="60">Adagio</button>
+          <button class="bpm-preset px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/30 text-zinc-500 text-xs hover:text-zinc-300 hover:border-zinc-600 transition" data-bpm="80">Andante</button>
+          <button class="bpm-preset px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/30 text-zinc-500 text-xs hover:text-zinc-300 hover:border-zinc-600 transition" data-bpm="100">Moderato</button>
+          <button class="bpm-preset px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/30 text-zinc-500 text-xs hover:text-zinc-300 hover:border-zinc-600 transition" data-bpm="120">Allegro</button>
+          <button class="bpm-preset px-3 py-1.5 rounded-lg bg-zinc-800/60 border border-zinc-700/30 text-zinc-500 text-xs hover:text-zinc-300 hover:border-zinc-600 transition" data-bpm="140">Vivace</button>
+        </div>
+      </div>
+
+      <!-- Secondary Controls -->
+      <div class="w-full max-w-xs grid grid-cols-2 gap-3">
+        <!-- Time Signature -->
+        <div class="rounded-xl border border-zinc-800/60 p-3" style="background: rgba(24,24,27,0.6);">
+          <label class="text-[0.55rem] uppercase tracking-widest text-zinc-600 font-semibold block mb-1.5">Time</label>
+          <select id="ts-select" class="w-full bg-zinc-800/80 border border-zinc-700/60 rounded-lg text-zinc-300 text-sm px-2 py-1.5 font-mono focus:border-brand outline-none transition">
+            <option value="4">4/4</option>
+            <option value="3">3/4</option>
+            <option value="6">6/8</option>
+            <option value="2">2/4</option>
+          </select>
+        </div>
+        <!-- Volume -->
+        <div class="rounded-xl border border-zinc-800/60 p-3" style="background: rgba(24,24,27,0.6);">
+          <label class="text-[0.55rem] uppercase tracking-widest text-zinc-600 font-semibold block mb-1.5">Volume</label>
+          <div class="flex items-center gap-2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-zinc-600"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            <input id="volume-slider" type="range" min="0" max="100" value="60" class="flex-1" />
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-zinc-600"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tap Tempo -->
+      <button id="tap-btn"
+        class="w-full max-w-xs py-3 rounded-xl border border-dashed border-zinc-700/50 text-zinc-500 hover:text-zinc-300 hover:border-zinc-600 transition text-sm font-medium active:scale-[0.98] tap-flash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 inline-block align-middle mr-1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Tap here to set tempo
+      </button>
+
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ── DOM refs ──────────────────────────────────────
+      const bpmDisplay = document.getElementById('bpm-display');
+      const bpmSlider = document.getElementById('bpm-slider');
+      const bpmUp = document.getElementById('bpm-up');
+      const bpmDown = document.getElementById('bpm-down');
+      const startBtn = document.getElementById('start-btn');
+      const tapBtn = document.getElementById('tap-btn');
+      const tsSelect = document.getElementById('ts-select');
+      const volumeSlider = document.getElementById('volume-slider');
+      const beatIndicator = document.getElementById('beat-indicator');
+      const beatCount = document.getElementById('beat-count');
+      const beatDots = document.getElementById('beat-dots');
+      const beatBars = document.querySelectorAll('.beat-bar');
+
+      // ── State ─────────────────────────────────────────
+      let ctx = null;
+      let isPlaying = false;
+      let bpm = 80;
+      let beatsPerBar = 4;
+      let beatIdx = 0;
+      let nextTime = 0;
+      let schedInterval = null;
+      let volume = 0.6;
+      let tapTimes = [];
+      const MAX_TAP_GAP = 2000;
+      const MIN_TAP_GAP = 200;
+
+      // ── Beat dots count ───────────────────────────────
+      function updateBeatDots(count) {
+        beatDots.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'beat-dot';
+          beatDots.appendChild(dot);
+        }
+      }
+      updateBeatDots(beatsPerBar);
+
+      // ── Update beat bars for visual variety ────────────
+      function updateBeatBars(activeIdx, isAccent) {
+        beatBars.forEach((bar, i) => {
+          bar.classList.remove('active', 'accent');
+          if (i % beatsPerBar === activeIdx) {
+            bar.classList.add(isAccent ? 'accent' : 'active');
+          }
+        });
+      }
+
+      // ── BPM sync ──────────────────────────────────────
+      function setBpm(val) {
+        bpm = Math.max(30, Math.min(240, Math.round(val)));
+        bpmDisplay.textContent = bpm;
+        bpmSlider.value = bpm;
+      }
+
+      bpmSlider.addEventListener('input', () => setBpm(bpmSlider.value));
+      bpmUp.addEventListener('click', () => setBpm(bpm + 5));
+      bpmDown.addEventListener('click', () => setBpm(bpm - 5));
+
+      // ── BPM presets ───────────────────────────────────
+      document.querySelectorAll('.bpm-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setBpm(parseInt(btn.dataset.bpm, 10));
+        });
+      });
+
+      // ── Time signature ────────────────────────────────
+      tsSelect.addEventListener('change', () => {
+        beatsPerBar = parseInt(tsSelect.value, 10);
+        beatIdx = 0;
+        updateBeatDots(beatsPerBar);
+      });
+
+      // ── Volume ────────────────────────────────────────
+      volumeSlider.addEventListener('input', () => {
+        volume = parseInt(volumeSlider.value, 10) / 100;
+      });
+
+      // ── Tap tempo ─────────────────────────────────────
+      tapBtn.addEventListener('click', function () {
+        const now = Date.now();
+        tapTimes = tapTimes.filter(t => now - t < MAX_TAP_GAP);
+        if (tapTimes.length === 0 || now - tapTimes[tapTimes.length - 1] > MIN_TAP_GAP) {
+          tapTimes.push(now);
+        }
+        // Flash button
+        this.classList.remove('tap-flash');
+        void this.offsetWidth;
+        this.classList.add('tap-flash');
+
+        if (tapTimes.length >= 2) {
+          const intervals = [];
+          for (let i = 1; i < tapTimes.length; i++) {
+            intervals.push(tapTimes[i] - tapTimes[i - 1]);
+          }
+          const avg = intervals.reduce((s, v) => s + v, 0) / intervals.length;
+          setBpm(Math.round(60000 / avg));
+        }
+      });
+
+      // ── Audio ─────────────────────────────────────────
+      function playClick(time, isAccent) {
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(isAccent ? 1200 : 900, time);
+        gain.gain.setValueAtTime(isAccent ? volume * 0.5 : volume * 0.35, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+        osc.start(time);
+        osc.stop(time + 0.04);
+      }
+
+      function scheduleBeats() {
+        if (!isPlaying || !ctx) return;
+        const lookAhead = 0.1;
+        const interval = 60.0 / bpm;
+
+        while (nextTime < ctx.currentTime + lookAhead) {
+          const inBar = beatIdx % beatsPerBar;
+          const isAccent = inBar === 0;
+
+          playClick(nextTime, isAccent);
+
+          // Visual flash
+          const delay = Math.max(0, (nextTime - ctx.currentTime) * 1000);
+          setTimeout(() => {
+            if (!isPlaying) return;
+            // Beat indicator
+            beatIndicator.classList.remove('beat', 'accent');
+            void beatIndicator.offsetWidth;
+            beatIndicator.classList.add(isAccent ? 'accent' : 'beat');
+            // Beat count
+            beatCount.textContent = inBar + 1;
+            // Beat dots
+            const dots = beatDots.querySelectorAll('.beat-dot');
+            dots.forEach((dot, i) => {
+              dot.classList.remove('active', 'accent');
+              if (i === inBar) dot.classList.add(isAccent ? 'accent' : 'active');
+            });
+            // Beat bars
+            updateBeatBars(inBar, isAccent);
+          }, delay);
+
+          nextTime += interval;
+          beatIdx++;
+        }
+      }
+
+      // ── Start / Stop ──────────────────────────────────
+      startBtn.addEventListener('click', function () {
+        if (isPlaying) {
+          stop();
+        } else {
+          start();
+        }
+      });
+
+      // Keyboard shortcut
+      document.addEventListener('keydown', function (e) {
+        if (e.key === ' ' || e.code === 'Space') {
+          e.preventDefault();
+          startBtn.click();
+        }
+      });
+
+      function start() {
+        try {
+          if (!ctx) {
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (ctx.state === 'suspended') ctx.resume();
+        } catch (e) {
+          return;
+        }
+        isPlaying = true;
+        beatIdx = 0;
+        nextTime = ctx.currentTime + 0.05;
+
+        startBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle mr-1.5"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> Stop';
+        startBtn.classList.add('playing');
+
+        scheduleBeats();
+        schedInterval = setInterval(scheduleBeats, 50);
+      }
+
+      function stop() {
+        isPlaying = false;
+        if (schedInterval) {
+          clearInterval(schedInterval);
+          schedInterval = null;
+        }
+        startBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 inline-block align-middle mr-1.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Start';
+        startBtn.classList.remove('playing');
+        beatIndicator.classList.remove('beat', 'accent');
+        beatCount.textContent = '1';
+        // Reset dots
+        document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('active', 'accent'));
+        // Reset bars
+        beatBars.forEach(b => b.classList.remove('active', 'accent'));
+      }
+
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', stop);
+
+    })();
+  </script>
+</body>
+</html>
