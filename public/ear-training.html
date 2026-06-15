@@ -285,6 +285,9 @@
         <button class="et-mode-btn" data-etmode="progressions">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><polyline points="4 7 4 4 7 4"/><polyline points="20 17 20 20 17 20"/><path d="M4 4v7c0 4 3 7 7 7h1"/><path d="M20 20v-7c0-4-3-7-7-7h-1"/></svg> Progressions
         </button>
+        <button class="et-mode-btn" data-etmode="prog-quiz">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Prog. Quiz
+        </button>
       </div>
 
       <!-- Stats Bar -->
@@ -340,6 +343,12 @@
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         Play Interval
       </button>
+
+      <!-- Progression Quiz Status -->
+      <div id="et-quiz-status" class="hidden text-center">
+        <p class="text-sm font-semibold text-zinc-300" id="et-quiz-prompt"></p>
+        <div class="flex items-center justify-center gap-1.5 mt-2" id="et-quiz-dots"></div>
+      </div>
 
       <!-- Interval/Chord Answer Grid -->
       <div id="et-interval-grid" class="grid grid-cols-3 gap-2"></div>
@@ -487,6 +496,22 @@
         ],
       };
 
+      // ── Roman Numeral Buttons for Quiz Mode ────────────
+      var ROMAN_NUMERALS = [
+        { step: 'I', label: 'I', color: '#34d399', desc: 'Tonic' },
+        { step: 'ii', label: 'ii', color: '#38bdf8', desc: 'Supertonic' },
+        { step: 'iii', label: 'iii', color: '#38bdf8', desc: 'Mediant' },
+        { step: 'IV', label: 'IV', color: '#34d399', desc: 'Subdominant' },
+        { step: 'V', label: 'V', color: '#fbbf24', desc: 'Dominant' },
+        { step: 'vi', label: 'vi', color: '#38bdf8', desc: 'Submediant' },
+        { step: 'bVII', label: '\u266dVII', color: '#f472b6', desc: 'Flat 7 (mixolydian)' },
+        { step: 'bIII', label: '\u266dIII', color: '#f472b6', desc: 'Flat 3 (borrowed)' },
+        { step: 'bVI', label: '\u266dVI', color: '#f472b6', desc: 'Flat 6 (borrowed)' },
+        { step: 'bII', label: '\u266dII', color: '#f472b6', desc: 'Flat 2 (Neapolitan)' },
+        { step: 'VI', label: 'VI', color: '#fbbf24', desc: 'Submediant (dom.)' },
+        { step: 'vii\u00b0', label: 'vii\u00b0', color: '#a78bfa', desc: 'Leading tone' },
+      ];
+
       // ── State ────────────────────────────────────────────
       var etDifficulty = 'beginner';
       var etDirection = 'ascending';
@@ -500,6 +525,17 @@
       var etCtx = null;
       var etPlaying = false;
       var etTimeoutId = null;
+
+      // ── Progression Quiz State ───────────────────────────
+      var etQuizProgression = null;  // { steps, name, short, desc }
+      var etQuizKey = 0;             // 0-11 (C to B)
+      var etQuizChordIdx = 0;        // 0-based index of current chord being asked
+      var etQuizResults = [];        // [{ step, correct }]
+      var etQuizActive = false;      // whether a quiz is in progress
+
+      var etQuizStatus = document.getElementById('et-quiz-status');
+      var etQuizPrompt = document.getElementById('et-quiz-prompt');
+      var etQuizDots = document.getElementById('et-quiz-dots');
 
       // ── DOM Refs ─────────────────────────────────────────
       var etPlayBtn = document.getElementById('et-play-btn');
@@ -627,6 +663,152 @@
 
         // Return the total duration needed
         return progression.steps.length * (beatDuration + gap);
+      }
+
+      // ── Progression Quiz Functions ────────────────────────
+      function initProgressionQuiz() {
+        var choices = ET_PROGRESSIONS[etDifficulty];
+        var prog = choices[Math.floor(Math.random() * choices.length)];
+        etQuizProgression = prog;
+        etQuizKey = Math.floor(Math.random() * 12);
+        etQuizChordIdx = 0;
+        etQuizResults = [];
+        etQuizActive = true;
+
+        etQuizStatus.classList.remove('hidden');
+        renderQuizDots();
+        updateQuizPrompt();
+
+        // Auto-play the progression
+        playProgressionQuiz();
+      }
+
+      function playProgressionQuiz() {
+        if (!etQuizProgression || !etQuizActive || etPlaying) return;
+        etPlaying = true;
+        var ctx = getEtCtx();
+        if (!ctx) { etPlaying = false; return; }
+
+        var keyRoot = 60 + etQuizKey;
+        var beatDuration = 0.7;
+        var gap = 0.15;
+        var startTime = ctx.currentTime + 0.05;
+
+        etQuizProgression.steps.forEach(function (step, i) {
+          var semitones = SCALE_DEGREE_SEMITONES[step];
+          if (semitones === undefined) semitones = 0;
+          var root = keyRoot + semitones;
+          var quality = PROGRESSION_QUALITIES[step];
+          if (!quality) return;
+
+          quality.intervals.forEach(function (interval, j) {
+            var noteMidi;
+            if (j === 0) {
+              noteMidi = root - 12;
+            } else {
+              noteMidi = root + interval;
+            }
+            var t = startTime + i * (beatDuration + gap);
+            playEtNote(ctx, midiToFreq(noteMidi), t, beatDuration);
+          });
+        });
+
+        var duration = etQuizProgression.steps.length * (beatDuration + gap) * 1000 + 100;
+        setTimeout(function () { etPlaying = false; }, duration);
+      }
+
+      function renderQuizDots() {
+        if (!etQuizProgression || !etQuizDots) return;
+        etQuizDots.innerHTML = etQuizProgression.steps.map(function (step, i) {
+          var isDone = i < etQuizChordIdx;
+          var result = etQuizResults[i];
+          var cls = 'w-3 h-3 rounded-full transition-all duration-200 ';
+          if (isDone) {
+            cls += result && result.correct ? 'bg-emerald-500 shadow-sm shadow-emerald-500/30' : 'bg-red-500';
+          } else if (i === etQuizChordIdx) {
+            cls += 'bg-brand animate-pulse';
+          } else {
+            cls += 'bg-zinc-700';
+          }
+          return '<span class="' + cls + '"></span>';
+        }).join('');
+      }
+
+      function updateQuizPrompt() {
+        if (!etQuizProgression || !etQuizActive || !etQuizPrompt) return;
+        if (etQuizChordIdx >= etQuizProgression.steps.length) {
+          // All done — show summary
+          var correctCount = etQuizResults.filter(function (r) { return r.correct; }).length;
+          etQuizPrompt.innerHTML = 'Complete! <span class="text-emerald-400">' + correctCount + '/' + etQuizProgression.steps.length + '</span> correct &mdash; <span class="text-brand">' + escapeHtml(etQuizProgression.short) + '</span>';
+          return;
+        }
+        var total = etQuizProgression.steps.length;
+        var current = etQuizChordIdx + 1;
+        etQuizPrompt.textContent = 'Chord ' + current + ' of ' + total + ' \u2014 Which Roman numeral is this chord?';
+      }
+
+      function renderQuizGrid() {
+        etGrid.classList.remove('grid-cols-2', 'grid-cols-3');
+        etGrid.classList.add('grid-cols-4');
+
+        etGrid.innerHTML = ROMAN_NUMERALS.map(function (rn) {
+          return '<button class="et-interval-btn" data-quizstep="' + rn.step + '">' +
+            '<span class="et-interval-short">' + rn.label + '</span>' +
+            '<span class="et-interval-name">' + rn.desc + '</span>' +
+          '</button>';
+        }).join('');
+      }
+
+      function handleQuizAnswer(step) {
+        if (!etQuizProgression || !etQuizActive) return;
+        if (etQuizChordIdx >= etQuizProgression.steps.length) return;
+
+        var correctStep = etQuizProgression.steps[etQuizChordIdx];
+        var isCorrect = step === correctStep;
+
+        // Record result
+        etQuizResults.push({ step: correctStep, correct: isCorrect });
+
+        // Visual feedback on grid
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+          if (btn.dataset.quizstep === correctStep) {
+            btn.classList.add('correct');
+          } else if (btn.dataset.quizstep === step && !isCorrect) {
+            btn.classList.add('wrong');
+          }
+          btn.disabled = true;
+        });
+
+        // Update score
+        if (isCorrect) { etCorrect++; etStreak++; }
+        else { etWrong++; etStreak = 0; }
+        updateEtScoreUI();
+
+        // Move to next chord
+        etQuizChordIdx++;
+        renderQuizDots();
+        updateQuizPrompt();
+
+        if (etQuizChordIdx >= etQuizProgression.steps.length) {
+          // Quiz complete — show result summary
+          etResult.classList.remove('hidden', 'correct', 'wrong');
+          var total = etQuizProgression.steps.length;
+          var correctCount = etQuizResults.filter(function (r) { return r.correct; }).length;
+          if (correctCount === total) {
+            etResult.classList.add('correct');
+            etResultText.textContent = '\u2713 Perfect! All ' + total + ' correct \u2014 ' + etQuizProgression.short;
+          } else {
+            etResult.classList.add('wrong');
+            etResultText.textContent = '\u2717 ' + correctCount + '/' + total + ' \u2014 The progression was ' + etQuizProgression.short + ' (' + etQuizProgression.steps.join(' \u2192 ') + ')';
+          }
+          etNextBtn.textContent = 'New Progression \u2192';
+          etPlayBtn.disabled = false;
+          etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Replay';
+        } else {
+          // Next chord — enable play button for replay
+          etPlayBtn.disabled = false;
+          etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Replay Progression';
+        }
       }
 
       // ── Game Logic ───────────────────────────────────────
@@ -759,6 +941,26 @@
       }
 
       function nextEtQuestion() {
+        if (etMode === 'prog-quiz') {
+          // Start a new progression quiz
+          hideEtResult();
+          etQuizProgression = null;
+          etQuizActive = false;
+          renderQuizGrid();
+          initProgressionQuiz();
+          etNextBtn.textContent = 'Next \u2192';
+          // Disable play until quiz is in progress
+          etPlayBtn.disabled = true;
+          etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Playing\u2026';
+          var timeout = etQuizProgression ? etQuizProgression.steps.length * (700 + 150) + 200 : 2500;
+          setTimeout(function () {
+            if (etPlayBtn) {
+              etPlayBtn.disabled = false;
+              etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Replay Progression';
+            }
+          }, timeout);
+          return;
+        }
         hideEtResult();
         etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = false; });
         etCurrentQuestion = generateEtQuestion();
@@ -798,7 +1000,11 @@
         if (etPlayBtn) {
           etPlayBtn.addEventListener('click', function () {
             if (etPlaying) return;
-            playEtCurrent();
+            if (etMode === 'prog-quiz') {
+              playProgressionQuiz();
+            } else {
+              playEtCurrent();
+            }
           });
         }
 
@@ -807,7 +1013,9 @@
           etGrid.addEventListener('click', function (e) {
             var btn = e.target.closest('.et-interval-btn');
             if (!btn || btn.disabled) return;
-            if (etMode === 'chords') {
+            if (etMode === 'prog-quiz') {
+              handleQuizAnswer(btn.dataset.quizstep);
+            } else if (etMode === 'chords') {
               handleEtAnswer(btn.dataset.etshort);
             } else if (etMode === 'progressions') {
               handleEtAnswer(btn.dataset.progshort);
@@ -821,6 +1029,9 @@
         if (etNextBtn) {
           etNextBtn.addEventListener('click', nextEtQuestion);
         }
+
+        // Keyboard Enter: next in normal modes, also works for prog-quiz
+        // (Already handled in keyboard shortcuts below)
 
         // Difficulty tabs
         etDiffBtns.forEach(function (btn) {
@@ -857,12 +1068,21 @@
             if (newMode === etMode) return;
             etMode = newMode;
 
+            // Reset quiz state when leaving quiz mode
+            if (newMode !== 'prog-quiz') {
+              etQuizProgression = null;
+              etQuizActive = false;
+              if (etQuizStatus) etQuizStatus.classList.add('hidden');
+              etNextBtn.textContent = 'Next \u2192';
+            }
+
             var isChords = etMode === 'chords';
             var isProgressions = etMode === 'progressions';
+            var isQuiz = etMode === 'prog-quiz';
 
-            // Direction row: hidden in chords AND progressions
+            // Direction row: hidden in chords, progressions, AND quiz
             if (etDirRow) {
-              etDirRow.classList.toggle('hidden', isChords || isProgressions);
+              etDirRow.classList.toggle('hidden', isChords || isProgressions || isQuiz);
             }
             // Chord controls: only visible in chords mode
             if (etChordRow) {
@@ -870,21 +1090,39 @@
             }
 
             if (etSubtitle) {
-              etSubtitle.textContent = isProgressions
-                ? 'Hear gospel chord progressions and identify them by ear \u2014 ii-V-I, turnarounds & more.'
-                : isChords
-                  ? 'Identify gospel chord types by ear \u2014 7th chords, sus, dim, aug & more.'
-                  : 'Train your ear to recognize intervals used in gospel piano.';
+              etSubtitle.textContent = isQuiz
+                ? 'Hear a progression and identify each chord\'s Roman numeral \u2014 I, ii, V, and more.'
+                : isProgressions
+                  ? 'Hear gospel chord progressions and identify them by ear \u2014 ii-V-I, turnarounds & more.'
+                  : isChords
+                    ? 'Identify gospel chord types by ear \u2014 7th chords, sus, dim, aug & more.'
+                    : 'Train your ear to recognize intervals used in gospel piano.';
             }
 
             resetEtGame();
             renderEtGrid();
-            etCurrentQuestion = generateEtQuestion();
-            hideEtResult();
-            etGrid.querySelectorAll('.et-interval-btn').forEach(function (b) { b.disabled = false; });
-            if (etPlayBtn) {
-              var label = isProgressions ? 'Play Progression' : isChords ? 'Play Chord' : 'Play Interval';
-              etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + label;
+
+            if (isQuiz) {
+              // Start a new progression quiz
+              hideEtResult();
+              initProgressionQuiz();
+              etPlayBtn.disabled = true;
+              etPlayBtn.innerHTML = '<svg class="w-5 h-5 et-wave-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Playing\u2026';
+              var timeout = etQuizProgression ? etQuizProgression.steps.length * (700 + 150) + 200 : 2500;
+              setTimeout(function () {
+                if (etPlayBtn) {
+                  etPlayBtn.disabled = false;
+                  etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Replay Progression';
+                }
+              }, timeout);
+            } else {
+              etCurrentQuestion = generateEtQuestion();
+              hideEtResult();
+              etGrid.querySelectorAll('.et-interval-btn').forEach(function (b) { b.disabled = false; });
+              if (etPlayBtn) {
+                var label = isProgressions ? 'Play Progression' : isChords ? 'Play Chord' : 'Play Interval';
+                etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + label;
+              }
             }
           });
         });
