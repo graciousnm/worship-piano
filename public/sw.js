@@ -10,6 +10,7 @@ const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/app.js',
+  '/app.js?v=2',
   '/favicon.svg',
   '/tailwind.css',
   '/manifest.json',

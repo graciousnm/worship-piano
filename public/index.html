@@ -12,6 +12,9 @@
   <meta name="apple-mobile-web-app-title" content="Worship Piano" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
   <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Referrer policy: YouTube's iframe API needs to see the origin to verify embeds.
+       Helmet header handles this, but meta tag is an extra safety net for iOS Safari. -->
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <link href="/tailwind.css" rel="stylesheet" />
   <style>
     /* ── Body & Background ──────────────────────── */

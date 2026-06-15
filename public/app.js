@@ -1942,7 +1942,7 @@
   let pwaBannerTimer = null;
   const BANNER_DURATION = 5 * 60 * 1000; // 5 minutes
   const PWA_DISMISSED_KEY = 'gospel_piano_pwa_dismissed';
-  const PWA_REAPPEAR_DELAY = 60 * 1000; // 1 minute for testing (will set back to 24h later)
+  const PWA_REAPPEAR_DELAY = 24 * 60 * 60 * 1000; // 24 hours
 
   const pwaBanner = document.getElementById('pwa-install-banner');
   const pwaInstallBtn = document.getElementById('pwa-install-btn');
