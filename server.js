@@ -26,6 +26,8 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'", 'https://www.youtube.com', 'https://cdn.tailwindcss.com', 'https://s.ytimg.com'],
+        // Allow inline event handlers (onmousemove, onclick, etc.) used on phase/lesson cards
+        "script-src-attr": null,
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.tailwindcss.com'],
         imgSrc: ["'self'", 'data:', 'https://img.youtube.com', 'https://i.ytimg.com', 'https://yt3.ggpht.com'],
         frameSrc: ["'self'", 'https://www.youtube.com'],
