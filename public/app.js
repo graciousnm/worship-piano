@@ -2226,14 +2226,48 @@
     ],
   };
 
+  // ── Chord Definitions (gospel-piano focused) ──────────
+  // Each chord defines intervals (semitones from root) for all notes in the chord.
+  var ET_CHORDS = {
+    beginner: [
+      { intervals: [0, 4, 7, 11], name: 'Major 7', short: 'maj7', desc: 'Warm, dreamy' },
+      { intervals: [0, 4, 7, 10], name: 'Dominant 7', short: '7', desc: 'Bluesy, tense' },
+      { intervals: [0, 3, 7, 10], name: 'Minor 7', short: 'm7', desc: 'Soulful, mellow' },
+    ],
+    intermediate: [
+      { intervals: [0, 4, 7, 11], name: 'Major 7', short: 'maj7', desc: 'Warm, dreamy' },
+      { intervals: [0, 4, 7, 10], name: 'Dominant 7', short: '7', desc: 'Bluesy, tense' },
+      { intervals: [0, 3, 7, 10], name: 'Minor 7', short: 'm7', desc: 'Soulful, mellow' },
+      { intervals: [0, 3, 6, 10], name: 'Min 7 b5', short: 'm7b5', desc: 'Dark, half-dim' },
+      { intervals: [0, 3, 6, 9], name: 'Diminished 7', short: 'dim7', desc: 'Tense passing' },
+      { intervals: [0, 4, 8], name: 'Augmented', short: 'aug', desc: 'Floating, raised 5th' },
+      { intervals: [0, 5, 7], name: 'Sus4', short: 'sus4', desc: 'Unresolved' },
+    ],
+    advanced: [
+      { intervals: [0, 4, 7, 11], name: 'Major 7', short: 'maj7', desc: 'Warm, dreamy' },
+      { intervals: [0, 4, 7, 10], name: 'Dominant 7', short: '7', desc: 'Bluesy, tense' },
+      { intervals: [0, 3, 7, 10], name: 'Minor 7', short: 'm7', desc: 'Soulful, mellow' },
+      { intervals: [0, 3, 6, 10], name: 'Min 7 b5', short: 'm7b5', desc: 'Dark, half-dim' },
+      { intervals: [0, 3, 6, 9], name: 'Diminished 7', short: 'dim7', desc: 'Tense passing' },
+      { intervals: [0, 4, 8], name: 'Augmented', short: 'aug', desc: 'Floating, raised 5th' },
+      { intervals: [0, 5, 7], name: 'Sus4', short: 'sus4', desc: 'Unresolved' },
+      { intervals: [0, 3, 7, 11], name: 'Min Major 7', short: 'mMaj7', desc: 'Dramatic gospel' },
+      { intervals: [0, 5, 7, 10], name: '7 Sus4', short: '7sus4', desc: 'Modern gospel' },
+    ],
+  };
+
+  var etMode = 'intervals';
   var etDifficulty = 'beginner';
   var etDirection = 'ascending';
+  var etVoicing = 'block';
+  var etSpread = 'close';
   var etCorrect = 0;
   var etWrong = 0;
   var etStreak = 0;
   var etCurrentQuestion = null;
   var etCtx = null;
   var etPlaying = false;
+  var etTimeoutId = null;
 
   var etModal = document.getElementById('ear-training-modal');
   var etCloseBtn = document.getElementById('ear-training-close');
@@ -2251,6 +2285,12 @@
   var etDirectionDesc = document.getElementById('et-direction-desc');
   var etDirectionBoth = document.getElementById('et-direction-both');
   var etDirAll = [etDirectionBtn, etDirectionDesc, etDirectionBoth].filter(Boolean);
+  var etSubtitle = document.getElementById('et-subtitle');
+  var etModeBtns = document.querySelectorAll('.et-mode-btn');
+  var etDirRow = document.getElementById('et-dir-row');
+  var etChordRow = document.getElementById('et-chord-row');
+  var etVoicingBtns = document.querySelectorAll('[data-etvoicing]');
+  var etSpreadBtns = document.querySelectorAll('[data-etspread]');
 
   function getEtCtx() {
     if (!etCtx) {
@@ -2305,19 +2345,63 @@
     playEtNote(ctx, midiToFreq(midiNote2), ctx.currentTime + 0.05 + noteDuration + gap, noteDuration);
   }
 
+  function playEtChord(chordDef) {
+    var midiRoot = 48 + Math.floor(Math.random() * 24); // C3 to B4 for chords (better range)
+    var isSpread = etSpread === 'spread';
+    var ctx = getEtCtx();
+    if (!ctx) return;
+
+    var noteDuration = 1.2;
+    chordDef.intervals.forEach(function (interval, i) {
+      var noteMidi;
+      if (isSpread) {
+        // Spread voicing: notes spread across 2 octaves
+        if (i === 0) noteMidi = midiRoot;
+        else noteMidi = midiRoot + 12 + interval;
+      } else {
+        // Close voicing: all within octave
+        noteMidi = midiRoot + interval;
+      }
+
+      var startTime;
+      if (etVoicing === 'arpeggiated') {
+        startTime = ctx.currentTime + 0.05 + i * 0.15;
+      } else {
+        startTime = ctx.currentTime + 0.05;
+      }
+      playEtNote(ctx, midiToFreq(noteMidi), startTime, noteDuration);
+    });
+  }
+
   function generateEtQuestion() {
-    var intervals = ET_INTERVALS[etDifficulty];
-    return { interval: intervals[Math.floor(Math.random() * intervals.length)], answered: false };
+    if (etMode === 'chords') {
+      var choices = ET_CHORDS[etDifficulty];
+      return { chord: choices[Math.floor(Math.random() * choices.length)], answered: false };
+    } else {
+      var intervals = ET_INTERVALS[etDifficulty];
+      return { interval: intervals[Math.floor(Math.random() * intervals.length)], answered: false };
+    }
   }
 
   function renderEtGrid() {
-    var intervals = ET_INTERVALS[etDifficulty];
-    etGrid.innerHTML = intervals.map(function (intv) {
-      return '<button class="et-interval-btn" data-semitones="' + intv.semitones + '">' +
-        '<span class="et-interval-short">' + intv.short + '</span>' +
-        '<span class="et-interval-name">' + intv.name + '</span>' +
-      '</button>';
-    }).join('');
+    if (etMode === 'chords') {
+      var choices = ET_CHORDS[etDifficulty];
+      etGrid.innerHTML = choices.map(function (c) {
+        return '<button class="et-interval-btn" data-etshort="' + escapeHtml(c.short) + '">' +
+          '<span class="et-interval-short">' + c.short + '</span>' +
+          '<span class="et-interval-name">' + c.name + '</span>' +
+          '<span class="et-interval-desc" style="display:block;font-size:0.5rem;color:#52525b;margin-top:0.1rem">' + c.desc + '</span>' +
+        '</button>';
+      }).join('');
+    } else {
+      var intervals = ET_INTERVALS[etDifficulty];
+      etGrid.innerHTML = intervals.map(function (intv) {
+        return '<button class="et-interval-btn" data-semitones="' + intv.semitones + '">' +
+          '<span class="et-interval-short">' + intv.short + '</span>' +
+          '<span class="et-interval-name">' + intv.name + '</span>' +
+        '</button>';
+      }).join('');
+    }
   }
 
   function resetEtGame() {
@@ -2355,18 +2439,30 @@
     });
   }
 
-  function handleEtAnswer(semitones) {
+  function handleEtAnswer(semitonesOrShort) {
     if (!etCurrentQuestion || etCurrentQuestion.answered) return;
-    var isCorrect = semitones === etCurrentQuestion.interval.semitones;
-    if (isCorrect) { etCorrect++; etStreak++; }
-    else { etWrong++; etStreak = 0;
-      etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
-        if (parseInt(btn.dataset.semitones, 10) === semitones) btn.classList.add('wrong');
-      });
+    var correctAnswer = etCurrentQuestion.interval || etCurrentQuestion.chord;
+    var isCorrect;
+    if (etMode === 'chords') {
+      isCorrect = semitonesOrShort === correctAnswer.short;
+      if (!isCorrect) {
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+          if (btn.dataset.etshort === semitonesOrShort) btn.classList.add('wrong');
+        });
+      }
+    } else {
+      isCorrect = semitonesOrShort === correctAnswer.semitones;
+      if (!isCorrect) {
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+          if (parseInt(btn.dataset.semitones, 10) === semitonesOrShort) btn.classList.add('wrong');
+        });
+      }
     }
+    if (isCorrect) { etCorrect++; etStreak++; }
+    else { etWrong++; etStreak = 0; }
     etCurrentQuestion.answered = true;
     updateEtScoreUI();
-    showEtResult(isCorrect, etCurrentQuestion.interval);
+    showEtResult(isCorrect, correctAnswer);
     etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = true; });
   }
 
@@ -2374,6 +2470,28 @@
     hideEtResult();
     etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = false; });
     etCurrentQuestion = generateEtQuestion();
+  }
+
+  function playEtCurrent() {
+    if (!etCurrentQuestion || etCurrentQuestion.answered) nextEtQuestion();
+    var answer = etCurrentQuestion.interval || etCurrentQuestion.chord;
+    if (!answer) return;
+    etPlaying = true;
+    etPlayBtn.disabled = true;
+    etPlayBtn.innerHTML = '<svg class="w-5 h-5 et-wave-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Playing…';
+    var timeoutMs = 2500;
+    if (etMode === 'chords') {
+      playEtChord(answer);
+    } else {
+      playEtInterval(answer);
+    }
+    if (etTimeoutId) clearTimeout(etTimeoutId);
+    etTimeoutId = setTimeout(function () {
+      etPlaying = false;
+      etPlayBtn.disabled = false;
+      var label = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+      etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + label;
+    }, timeoutMs);
   }
 
   function openEarTraining() {
@@ -2384,6 +2502,11 @@
     etCurrentQuestion = generateEtQuestion();
     hideEtResult();
     etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = false; });
+    // Update play button text and subtitle
+    if (etPlayBtn) {
+      var label = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+      etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + label;
+    }
   }
 
   function closeEarTraining() {
@@ -2430,7 +2553,11 @@
       etGrid.addEventListener('click', function (e) {
         var btn = e.target.closest('.et-interval-btn');
         if (!btn || btn.disabled) return;
-        handleEtAnswer(parseInt(btn.dataset.semitones, 10));
+        if (etMode === 'chords') {
+          handleEtAnswer(btn.dataset.etshort);
+        } else {
+          handleEtAnswer(parseInt(btn.dataset.semitones, 10));
+        }
       });
     }
 
@@ -2458,6 +2585,59 @@
         etDirAll.forEach(function (b) { b.classList.remove('active'); });
         this.classList.add('active');
         etDirection = this.dataset.dir;
+      });
+    });
+
+    // ── Mode Tabs ─────────────────────────────
+    etModeBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (etPlaying) return;
+        etModeBtns.forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        var newMode = this.dataset.etmode;
+        if (newMode === etMode) return;
+        etMode = newMode;
+
+        // Toggle visibility of direction vs chord controls
+        if (etDirRow) etDirRow.classList.toggle('hidden', etMode === 'chords');
+        if (etChordRow) etChordRow.classList.toggle('hidden', etMode === 'intervals');
+
+        // Update subtitle
+        if (etSubtitle) {
+          etSubtitle.textContent = etMode === 'chords'
+            ? 'Identify gospel chord types by ear — 7th chords, sus, dim, aug & more.'
+            : 'Train your ear to recognize intervals used in gospel piano.';
+        }
+
+        resetEtGame();
+        renderEtGrid();
+        etCurrentQuestion = generateEtQuestion();
+        hideEtResult();
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (b) { b.disabled = false; });
+        if (etPlayBtn) {
+          var label = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+          etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + label;
+        }
+      });
+    });
+
+    // ── Voicing Controls (chord mode) ─────────
+    etVoicingBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (etPlaying) return;
+        etVoicingBtns.forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        etVoicing = this.dataset.etvoicing;
+      });
+    });
+
+    // ── Spread Controls (chord mode) ──────────
+    etSpreadBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (etPlaying) return;
+        etSpreadBtns.forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        etSpread = this.dataset.etspread;
       });
     });
 

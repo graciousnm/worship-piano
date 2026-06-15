@@ -193,6 +193,26 @@
     .et-dir-btn:hover { color: #a1a1aa; background: rgba(255,255,255,0.08); }
     .et-dir-btn.active { background: rgba(245,158,11,0.12); color: #f59e0b; border-color: rgba(245,158,11,0.25); }
 
+    .et-mode-btn {
+      flex: 1;
+      padding: 0.5rem 0.5rem;
+      border-radius: 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      background: rgba(255,255,255,0.04);
+      color: #71717a;
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+    .et-mode-btn:hover { background: rgba(255,255,255,0.08); color: #a1a1aa; }
+    .et-mode-btn.active { background: rgba(16,185,129,0.12); color: #34d399; border-color: rgba(16,185,129,0.25); box-shadow: 0 0 12px rgba(16,185,129,0.08); }
+
     .et-wave-icon {
       animation: wavePulse 1.5s ease-in-out infinite;
     }
@@ -1633,7 +1653,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" style="color:#f59e0b"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
           Ear Training
         </h2>
-        <p class="text-xs text-zinc-500 mt-0.5">Train your ear to recognize intervals used in gospel piano.</p>
+        <p id="et-subtitle" class="text-xs text-zinc-500 mt-0.5">Train your ear to recognize intervals used in gospel piano.</p>
+      </div>
+
+      <!-- Mode Tabs -->
+      <div class="flex gap-1.5 mb-3">
+        <button class="et-mode-btn active" data-etmode="intervals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><line x1="6" y1="4" x2="6" y2="20"/><line x1="10" y1="9" x2="10" y2="20"/><line x1="14" y1="7" x2="14" y2="20"/><line x1="18" y1="11" x2="18" y2="20"/></svg> Intervals</button>
+        <button class="et-mode-btn" data-etmode="chords"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg> Chords</button>
       </div>
 
       <!-- Stats Bar -->
@@ -1660,13 +1686,27 @@
         <button class="et-diff-btn" data-diff="advanced">Advanced</button>
       </div>
 
-      <!-- Settings Row -->
-      <div class="flex items-center justify-between mb-4">
+      <!-- Settings Row — Direction (intervals mode) -->
+      <div id="et-dir-row" class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-2">
           <span class="text-[0.65rem] text-zinc-500 font-medium">Direction:</span>
           <button id="et-direction" class="et-dir-btn active" data-dir="ascending">↑ Ascending</button>
           <button id="et-direction-desc" class="et-dir-btn" data-dir="descending">↓ Descending</button>
           <button id="et-direction-both" class="et-dir-btn" data-dir="both">↕ Both</button>
+        </div>
+      </div>
+
+      <!-- Settings Row — Chord controls (chords mode) -->
+      <div id="et-chord-row" class="flex items-center justify-between mb-4 hidden">
+        <div class="flex items-center gap-2">
+          <span class="text-[0.65rem] text-zinc-500 font-medium">Play:</span>
+          <button class="et-dir-btn active" data-etvoicing="block">Block</button>
+          <button class="et-dir-btn" data-etvoicing="arpeggiated">Arp.</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[0.65rem] text-zinc-500 font-medium">Voicing:</span>
+          <button class="et-dir-btn active" data-etspread="close">Close</button>
+          <button class="et-dir-btn" data-etspread="spread">Spread</button>
         </div>
       </div>
 
