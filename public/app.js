@@ -1831,6 +1831,9 @@
       if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
 
       if (e.key === ' ' || e.code === 'Space') {
+        // Don't toggle playback if a modal is open (ear training, badge gallery, etc.)
+        if (etModal && etModal.classList.contains('show')) return;
+        if (badgeModal && badgeModal.classList.contains('show')) return;
         e.preventDefault();
         if (player && typeof player.getPlayerState === 'function') {
           if (player.getPlayerState() === 1) player.pauseVideo();
@@ -1989,20 +1992,22 @@
       }
     }
 
-    function openHamburger() {
-      hamburgerDropdown.classList.add('open');
-      hamburgerDropdown.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
-      hamburgerDropdown.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
-      hamburgerIcon.classList.add('hidden');
-      hamburgerCloseIcon.classList.remove('hidden');
     }
 
-    function closeHamburger() {
-      hamburgerDropdown.classList.remove('open', 'opacity-100', 'translate-y-0', 'pointer-events-auto');
-      hamburgerDropdown.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
-      hamburgerIcon.classList.remove('hidden');
-      hamburgerCloseIcon.classList.add('hidden');
-    }
+  // ── Hamburger Helpers (IIFE scope for access by ear training) ──
+  function openHamburger() {
+    hamburgerDropdown.classList.add('open');
+    hamburgerDropdown.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
+    hamburgerDropdown.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+    hamburgerIcon.classList.add('hidden');
+    hamburgerCloseIcon.classList.remove('hidden');
+  }
+
+  function closeHamburger() {
+    hamburgerDropdown.classList.remove('open', 'opacity-100', 'translate-y-0', 'pointer-events-auto');
+    hamburgerDropdown.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+    hamburgerIcon.classList.remove('hidden');
+    hamburgerCloseIcon.classList.add('hidden');
   }
 
   // ── YouTube API Ready ─────────────────────────────────────
@@ -2175,6 +2180,315 @@
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  Ear Training — Interval Recognition
+  // ═══════════════════════════════════════════════════════════════
+  // Music theory helpers
+  var NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+  function midiToFreq(midi) {
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+
+  // Interval definitions by difficulty — gospel piano focused
+  var ET_INTERVALS = {
+    beginner: [
+      { semitones: 3, name: 'Minor 3rd', short: 'm3' },
+      { semitones: 4, name: 'Major 3rd', short: 'M3' },
+      { semitones: 5, name: 'Perfect 4th', short: 'P4' },
+      { semitones: 7, name: 'Perfect 5th', short: 'P5' },
+      { semitones: 12, name: 'Octave', short: '8ve' },
+    ],
+    intermediate: [
+      { semitones: 3, name: 'Minor 3rd', short: 'm3' },
+      { semitones: 4, name: 'Major 3rd', short: 'M3' },
+      { semitones: 5, name: 'Perfect 4th', short: 'P4' },
+      { semitones: 7, name: 'Perfect 5th', short: 'P5' },
+      { semitones: 8, name: 'Minor 6th', short: 'm6' },
+      { semitones: 9, name: 'Major 6th', short: 'M6' },
+      { semitones: 10, name: 'Minor 7th', short: 'm7' },
+      { semitones: 11, name: 'Major 7th', short: 'M7' },
+      { semitones: 12, name: 'Octave', short: '8ve' },
+    ],
+    advanced: [
+      { semitones: 1, name: 'Minor 2nd', short: 'm2' },
+      { semitones: 2, name: 'Major 2nd', short: 'M2' },
+      { semitones: 3, name: 'Minor 3rd', short: 'm3' },
+      { semitones: 4, name: 'Major 3rd', short: 'M3' },
+      { semitones: 5, name: 'Perfect 4th', short: 'P4' },
+      { semitones: 6, name: 'Tritone', short: 'TT' },
+      { semitones: 7, name: 'Perfect 5th', short: 'P5' },
+      { semitones: 8, name: 'Minor 6th', short: 'm6' },
+      { semitones: 9, name: 'Major 6th', short: 'M6' },
+      { semitones: 10, name: 'Minor 7th', short: 'm7' },
+      { semitones: 11, name: 'Major 7th', short: 'M7' },
+      { semitones: 12, name: 'Octave', short: '8ve' },
+    ],
+  };
+
+  var etDifficulty = 'beginner';
+  var etDirection = 'ascending';
+  var etCorrect = 0;
+  var etWrong = 0;
+  var etStreak = 0;
+  var etCurrentQuestion = null;
+  var etCtx = null;
+  var etPlaying = false;
+
+  var etModal = document.getElementById('ear-training-modal');
+  var etCloseBtn = document.getElementById('ear-training-close');
+  var etPlayBtn = document.getElementById('et-play-btn');
+  var etGrid = document.getElementById('et-interval-grid');
+  var etResult = document.getElementById('et-result');
+  var etResultText = document.getElementById('et-result-text');
+  var etNextBtn = document.getElementById('et-next-btn');
+  var etCorrectSpan = document.getElementById('et-correct');
+  var etWrongSpan = document.getElementById('et-wrong');
+  var etStreakSpan = document.getElementById('et-streak');
+  var etDiffBtns = document.querySelectorAll('.et-diff-btn');
+  var etHamburgerBtn = document.getElementById('hamburger-ear-training');
+  var etDirectionBtn = document.getElementById('et-direction');
+  var etDirectionDesc = document.getElementById('et-direction-desc');
+  var etDirectionBoth = document.getElementById('et-direction-both');
+  var etDirAll = [etDirectionBtn, etDirectionDesc, etDirectionBoth].filter(Boolean);
+
+  function getEtCtx() {
+    if (!etCtx) {
+      try {
+        etCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) { return null; }
+    }
+    if (etCtx.state === 'suspended') { etCtx.resume(); }
+    return etCtx;
+  }
+
+  function playEtNote(ctx, freq, startTime, duration) {
+    // Harmonic synthesis for a warm piano-like tone
+    var harmonics = [
+      { ratio: 1, gain: 0.35 },
+      { ratio: 2, gain: 0.12 },
+      { ratio: 3, gain: 0.06 },
+      { ratio: 4, gain: 0.03 },
+    ];
+    harmonics.forEach(function (h) {
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq * h.ratio, startTime);
+      gain.gain.setValueAtTime(h.gain, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    });
+  }
+
+  function playEtInterval(interval) {
+    var midiRoot = 60 + Math.floor(Math.random() * 24); // C4 to B5
+    var isDescending = etDirection === 'descending' || (etDirection === 'both' && Math.random() < 0.5);
+
+    var midiNote1, midiNote2;
+    if (isDescending) {
+      midiNote1 = midiRoot + 12;
+      midiNote2 = midiRoot + 12 - interval.semitones;
+    } else {
+      midiNote1 = midiRoot;
+      midiNote2 = midiRoot + interval.semitones;
+    }
+
+    var ctx = getEtCtx();
+    if (!ctx) return;
+
+    var noteDuration = 0.8;
+    var gap = 0.5;
+    playEtNote(ctx, midiToFreq(midiNote1), ctx.currentTime + 0.05, noteDuration);
+    playEtNote(ctx, midiToFreq(midiNote2), ctx.currentTime + 0.05 + noteDuration + gap, noteDuration);
+  }
+
+  function generateEtQuestion() {
+    var intervals = ET_INTERVALS[etDifficulty];
+    return { interval: intervals[Math.floor(Math.random() * intervals.length)], answered: false };
+  }
+
+  function renderEtGrid() {
+    var intervals = ET_INTERVALS[etDifficulty];
+    etGrid.innerHTML = intervals.map(function (intv) {
+      return '<button class="et-interval-btn" data-semitones="' + intv.semitones + '">' +
+        '<span class="et-interval-short">' + intv.short + '</span>' +
+        '<span class="et-interval-name">' + intv.name + '</span>' +
+      '</button>';
+    }).join('');
+  }
+
+  function resetEtGame() {
+    etCorrect = 0; etWrong = 0; etStreak = 0;
+    updateEtScoreUI();
+  }
+
+  function updateEtScoreUI() {
+    if (etCorrectSpan) etCorrectSpan.textContent = etCorrect;
+    if (etWrongSpan) etWrongSpan.textContent = etWrong;
+    if (etStreakSpan) etStreakSpan.textContent = etStreak;
+  }
+
+  function showEtResult(isCorrect, correctInterval) {
+    etResult.classList.remove('hidden', 'correct', 'wrong');
+    if (isCorrect) {
+      etResult.classList.add('correct');
+      etResultText.textContent = '\u2713 Correct! (' + correctInterval.name + ')';
+    } else {
+      etResult.classList.add('wrong');
+      etResultText.textContent = '\u2717 Incorrect \u2014 it was ' + correctInterval.name + ' (' + correctInterval.short + ')';
+    }
+    etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+      if (parseInt(btn.dataset.semitones, 10) === correctInterval.semitones) {
+        btn.classList.add(isCorrect ? 'correct' : 'reveal-correct');
+      }
+    });
+  }
+
+  function hideEtResult() {
+    etResult.classList.add('hidden');
+    etResult.classList.remove('correct', 'wrong');
+    etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+      btn.classList.remove('correct', 'wrong', 'reveal-correct');
+    });
+  }
+
+  function handleEtAnswer(semitones) {
+    if (!etCurrentQuestion || etCurrentQuestion.answered) return;
+    var isCorrect = semitones === etCurrentQuestion.interval.semitones;
+    if (isCorrect) { etCorrect++; etStreak++; }
+    else { etWrong++; etStreak = 0;
+      etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+        if (parseInt(btn.dataset.semitones, 10) === semitones) btn.classList.add('wrong');
+      });
+    }
+    etCurrentQuestion.answered = true;
+    updateEtScoreUI();
+    showEtResult(isCorrect, etCurrentQuestion.interval);
+    etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = true; });
+  }
+
+  function nextEtQuestion() {
+    hideEtResult();
+    etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = false; });
+    etCurrentQuestion = generateEtQuestion();
+  }
+
+  function openEarTraining() {
+    if (!etModal) return;
+    etModal.classList.add('show');
+    resetEtGame();
+    renderEtGrid();
+    etCurrentQuestion = generateEtQuestion();
+    hideEtResult();
+    etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = false; });
+  }
+
+  function closeEarTraining() {
+    if (!etModal) return;
+    etModal.classList.remove('show');
+  }
+
+  function bindEarTrainingEvents() {
+    if (etHamburgerBtn) {
+      etHamburgerBtn.addEventListener('click', function () {
+        closeHamburger();
+        openEarTraining();
+      });
+    }
+
+    if (etCloseBtn) {
+      etCloseBtn.addEventListener('click', closeEarTraining);
+    }
+
+    if (etModal) {
+      etModal.addEventListener('click', function (e) {
+        if (e.target === etModal) closeEarTraining();
+      });
+    }
+
+    if (etPlayBtn) {
+      etPlayBtn.addEventListener('click', function () {
+        if (etPlaying) return;
+        if (!etCurrentQuestion || etCurrentQuestion.answered) nextEtQuestion();
+        etPlaying = true;
+        etPlayBtn.disabled = true;
+        etPlayBtn.innerHTML = '<svg class="w-5 h-5 et-wave-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Playing\u2026';
+        var timeoutMs = 2500;
+        playEtInterval(etCurrentQuestion.interval);
+        setTimeout(function () {
+          etPlaying = false;
+          etPlayBtn.disabled = false;
+          etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Play Interval';
+        }, timeoutMs);
+      });
+    }
+
+    if (etGrid) {
+      etGrid.addEventListener('click', function (e) {
+        var btn = e.target.closest('.et-interval-btn');
+        if (!btn || btn.disabled) return;
+        handleEtAnswer(parseInt(btn.dataset.semitones, 10));
+      });
+    }
+
+    if (etNextBtn) {
+      etNextBtn.addEventListener('click', nextEtQuestion);
+    }
+
+    etDiffBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (etPlaying) return;
+        etDiffBtns.forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        etDifficulty = this.dataset.diff;
+        resetEtGame();
+        renderEtGrid();
+        etCurrentQuestion = generateEtQuestion();
+        hideEtResult();
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (b) { b.disabled = false; });
+      });
+    });
+
+    etDirAll.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (etPlaying) return;
+        etDirAll.forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        etDirection = this.dataset.dir;
+      });
+    });
+
+    // Keyboard shortcuts: Space to play, Enter for Next, Escape to close
+    document.addEventListener('keydown', function (e) {
+      if (!etModal || !etModal.classList.contains('show')) return;
+      if (e.key === 'Escape') { closeEarTraining(); }
+      else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        if (etPlayBtn && !etPlayBtn.disabled) etPlayBtn.click();
+      }
+      else if (e.key === 'Enter' && !etResult.classList.contains('hidden') && etNextBtn) {
+        etNextBtn.click();
+      }
+    });
+
+    // Global keyboard shortcut: Ctrl+E to open ear training
+    document.addEventListener('keydown', function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        if (etModal && !etModal.classList.contains('show')) {
+          // Close any other open modals
+          if (badgeModal && badgeModal.classList.contains('show')) closeBadgeGallery();
+          openEarTraining();
+        } else {
+          closeEarTraining();
+        }
+      }
+    });
+  }
+
   // ── Init ─────────────────────────────────────────────────
   function init() {
     initPwaInstall();
@@ -2185,6 +2499,7 @@
     loadAchievements();
     bindEvents();
     initMetronome();
+    bindEarTrainingEvents();
     loadModules();
   }
 
