@@ -1,0 +1,19 @@
+{
+  "name": "Worship Piano",
+  "short_name": "WorshipPiano",
+  "description": "Learn worship piano with structured video lessons, progress tracking, and a built-in metronome.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#f59e0b",
+  "orientation": "any",
+  "categories": ["music", "education"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any monochrome"
+    }
+  ]
+}
