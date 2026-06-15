@@ -282,6 +282,9 @@
         <button class="et-mode-btn" data-etmode="chords">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg> Chords
         </button>
+        <button class="et-mode-btn" data-etmode="progressions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><polyline points="4 7 4 4 7 4"/><polyline points="20 17 20 20 17 20"/><path d="M4 4v7c0 4 3 7 7 7h1"/><path d="M20 20v-7c0-4-3-7-7-7h-1"/></svg> Progressions
+        </button>
       </div>
 
       <!-- Stats Bar -->
@@ -438,6 +441,52 @@
         ],
       };
 
+      // ── Progression Definitions (gospel-piano focused) ──
+      // Each progression defines scale-degree steps rooted in a random key.
+      // Chord qualities follow gospel piano conventions.
+      var PROGRESSION_QUALITIES = {
+        'I': { short: 'maj7', intervals: [0, 4, 7, 11] },
+        'bII': { short: 'maj7', intervals: [0, 4, 7, 11] },
+        'ii': { short: 'm7', intervals: [0, 3, 7, 10] },
+        'bIII': { short: 'maj7', intervals: [0, 4, 7, 11] },
+        'iii': { short: 'm7', intervals: [0, 3, 7, 10] },
+        'IV': { short: 'maj7', intervals: [0, 4, 7, 11] },
+        '#IV': { short: 'dim7', intervals: [0, 3, 6, 9] },
+        'bV': { short: 'dim7', intervals: [0, 3, 6, 9] },
+        'V': { short: '7', intervals: [0, 4, 7, 10] },
+        'bVI': { short: 'maj7', intervals: [0, 4, 7, 11] },
+        'vi': { short: 'm7', intervals: [0, 3, 7, 10] },
+        'VI': { short: '7', intervals: [0, 4, 7, 10] },
+        'bVII': { short: '7', intervals: [0, 4, 7, 10] },
+        'VII': { short: 'dim7', intervals: [0, 3, 6, 9] },
+      };
+
+      var SCALE_DEGREE_SEMITONES = {
+        'I': 0, 'bII': 1, 'ii': 2, 'bIII': 3, 'iii': 4,
+        'IV': 5, '#IV': 6, 'bV': 6, 'V': 7, 'bVI': 8,
+        'vi': 9, 'VI': 9, 'bVII': 10, 'VII': 11
+      };
+
+      var ET_PROGRESSIONS = {
+        beginner: [
+          { steps: ['I', 'IV', 'V'], name: 'I-IV-V', short: 'I-IV-V', desc: 'Classic rock & blues foundation' },
+          { steps: ['I', 'V', 'vi', 'IV'], name: 'I-V-vi-IV', short: 'I-V-vi-IV', desc: 'Modern pop staple' },
+          { steps: ['ii', 'V', 'I'], name: 'ii-V-I', short: 'ii-V-I', desc: 'Essential jazz & gospel cadence' },
+        ],
+        intermediate: [
+          { steps: ['I', 'vi', 'ii', 'V'], name: 'I-vi-ii-V', short: 'I-vi-ii-V', desc: 'Jazz turnaround, classic gospel' },
+          { steps: ['I', 'IV', 'ii', 'V'], name: 'I-IV-ii-V', short: 'I-IV-ii-V', desc: 'Gospel passing chord progression' },
+          { steps: ['iii', 'VI', 'ii', 'V'], name: 'iii-VI-ii-V', short: 'iii-VI-ii-V', desc: 'Extended gospel turnaround' },
+          { steps: ['I', 'V', 'vi', 'iii', 'IV'], name: 'I-V-vi-iii-IV', short: 'I-V-vi-iii-IV', desc: 'Pop/gospel ballad' },
+        ],
+        advanced: [
+          { steps: ['bVII', 'IV', 'I'], name: '\u266dVII-IV-I', short: 'bVII-IV-I', desc: 'Mixolydian gospel sound' },
+          { steps: ['I', 'IV', 'ii', 'V'], name: 'I-IV-ii-V with 7ths', short: 'I-IV-ii-V', desc: 'Rich gospel passing chords' },
+          { steps: ['ii', 'V', 'I', 'IV'], name: 'ii-V-I-IV', short: 'ii-V-I-IV', desc: 'Extended gospel cadence' },
+          { steps: ['I', 'bIII', 'IV', 'bVII', 'I'], name: 'I-bIII-IV-bVII-I', short: 'I-bIII-IV-bVII-I', desc: 'Modal gospel progression' },
+        ],
+      };
+
       // ── State ────────────────────────────────────────────
       var etDifficulty = 'beginner';
       var etDirection = 'ascending';
@@ -541,11 +590,53 @@
         });
       }
 
+      function playEtProgression(progression) {
+        var ctx = getEtCtx();
+        if (!ctx) return;
+
+        // Pick a random key
+        var key = Math.floor(Math.random() * 12);
+        var keyRoot = 60 + key; // C4 to B4
+        var beatDuration = 0.7;
+        var gap = 0.15;
+        var startTime = ctx.currentTime + 0.05;
+
+        progression.steps.forEach(function (step, i) {
+          var semitones = SCALE_DEGREE_SEMITONES[step];
+          if (semitones === undefined) semitones = 0;
+          var root = keyRoot + semitones;
+          var quality = PROGRESSION_QUALITIES[step];
+          if (!quality) return;
+
+          quality.intervals.forEach(function (interval, j) {
+            var noteMidi;
+            if (j === 0) {
+              // Root: keep in lower register for bass motion
+              noteMidi = root - 12;
+            } else if (j === 1) {
+              // 3rd: upper octave
+              noteMidi = root + interval;
+            } else {
+              // Remaining notes: spread across upper octave
+              noteMidi = root + interval;
+            }
+            var t = startTime + i * (beatDuration + gap);
+            playEtNote(ctx, midiToFreq(noteMidi), t, beatDuration);
+          });
+        });
+
+        // Return the total duration needed
+        return progression.steps.length * (beatDuration + gap);
+      }
+
       // ── Game Logic ───────────────────────────────────────
       function generateEtQuestion() {
         if (etMode === 'chords') {
           var choices = ET_CHORDS[etDifficulty];
           return { chord: choices[Math.floor(Math.random() * choices.length)], answered: false };
+        } else if (etMode === 'progressions') {
+          var choices = ET_PROGRESSIONS[etDifficulty];
+          return { progression: choices[Math.floor(Math.random() * choices.length)], answered: false };
         } else {
           var intervals = ET_INTERVALS[etDifficulty];
           return { interval: intervals[Math.floor(Math.random() * intervals.length)], answered: false };
@@ -553,8 +644,12 @@
       }
 
       function renderEtGrid() {
+        // Reset grid columns to prevent class accumulation
+        etGrid.classList.remove('grid-cols-2', 'grid-cols-3');
+
         if (etMode === 'chords') {
           var choices = ET_CHORDS[etDifficulty];
+          etGrid.classList.add('grid-cols-3');
           etGrid.innerHTML = choices.map(function (c) {
             return '<button class="et-interval-btn" data-etshort="' + escapeHtml(c.short) + '">' +
               '<span class="et-interval-short">' + c.short + '</span>' +
@@ -562,7 +657,18 @@
               '<span class="et-interval-desc">' + c.desc + '</span>' +
             '</button>';
           }).join('');
+        } else if (etMode === 'progressions') {
+          etGrid.classList.add('grid-cols-2');
+          var progChoices = ET_PROGRESSIONS[etDifficulty];
+          etGrid.innerHTML = progChoices.map(function (p) {
+            return '<button class="et-interval-btn" data-progshort="' + escapeHtml(p.short) + '">' +
+              '<span class="et-interval-short">' + p.short + '</span>' +
+              '<span class="et-interval-name">' + p.name + '</span>' +
+              '<span class="et-interval-desc">' + p.desc + '</span>' +
+            '</button>';
+          }).join('');
         } else {
+          etGrid.classList.add('grid-cols-3');
           var intervals = ET_INTERVALS[etDifficulty];
           etGrid.innerHTML = intervals.map(function (intv) {
             return '<button class="et-interval-btn" data-semitones="' + intv.semitones + '">' +
@@ -598,6 +704,10 @@
             if (btn.dataset.etshort === correctAnswer.short) {
               btn.classList.add(isCorrect ? 'correct' : 'reveal-correct');
             }
+          } else if (etMode === 'progressions') {
+            if (btn.dataset.progshort === correctAnswer.short) {
+              btn.classList.add(isCorrect ? 'correct' : 'reveal-correct');
+            }
           } else {
             if (parseInt(btn.dataset.semitones, 10) === correctAnswer.semitones) {
               btn.classList.add(isCorrect ? 'correct' : 'reveal-correct');
@@ -616,13 +726,20 @@
 
       function handleEtAnswer(semitonesOrShort) {
         if (!etCurrentQuestion || etCurrentQuestion.answered) return;
-        var correctAnswer = etCurrentQuestion.interval || etCurrentQuestion.chord;
+        var correctAnswer = etCurrentQuestion.interval || etCurrentQuestion.chord || etCurrentQuestion.progression;
         var isCorrect;
         if (etMode === 'chords') {
           isCorrect = semitonesOrShort === correctAnswer.short;
           if (!isCorrect) {
             etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
               if (btn.dataset.etshort === semitonesOrShort) btn.classList.add('wrong');
+            });
+          }
+        } else if (etMode === 'progressions') {
+          isCorrect = semitonesOrShort === correctAnswer.short;
+          if (!isCorrect) {
+            etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+              if (btn.dataset.progshort === semitonesOrShort) btn.classList.add('wrong');
             });
           }
         } else {
@@ -649,23 +766,28 @@
 
       function playEtCurrent() {
         if (!etCurrentQuestion || etCurrentQuestion.answered) nextEtQuestion();
-        var answer = etCurrentQuestion.interval || etCurrentQuestion.chord;
+        var answer = etCurrentQuestion.interval || etCurrentQuestion.chord || etCurrentQuestion.progression;
         if (!answer) return;
         etPlaying = true;
         etPlayBtn.disabled = true;
-        var label = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+        var label = etMode === 'chords' ? 'Play Chord' : etMode === 'progressions' ? 'Play Progression' : 'Play Interval';
         etPlayBtn.innerHTML = '<svg class="w-5 h-5 et-wave-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Playing\u2026';
         var timeoutMs = 2500;
         if (etMode === 'chords') {
+          timeoutMs = 2500;
           playEtChord(answer);
+        } else if (etMode === 'progressions') {
+          timeoutMs = answer.steps.length * (700 + 150) + 500;
+          playEtProgression(answer);
         } else {
+          timeoutMs = 2500;
           playEtInterval(answer);
         }
         if (etTimeoutId) clearTimeout(etTimeoutId);
         etTimeoutId = setTimeout(function () {
           etPlaying = false;
           etPlayBtn.disabled = false;
-          var newLabel = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+          var newLabel = etMode === 'chords' ? 'Play Chord' : etMode === 'progressions' ? 'Play Progression' : 'Play Interval';
           etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + newLabel;
         }, timeoutMs);
       }
@@ -687,6 +809,8 @@
             if (!btn || btn.disabled) return;
             if (etMode === 'chords') {
               handleEtAnswer(btn.dataset.etshort);
+            } else if (etMode === 'progressions') {
+              handleEtAnswer(btn.dataset.progshort);
             } else {
               handleEtAnswer(parseInt(btn.dataset.semitones, 10));
             }
@@ -733,13 +857,24 @@
             if (newMode === etMode) return;
             etMode = newMode;
 
-            if (etDirRow) etDirRow.classList.toggle('hidden', etMode === 'chords');
-            if (etChordRow) etChordRow.classList.toggle('hidden', etMode === 'intervals');
+            var isChords = etMode === 'chords';
+            var isProgressions = etMode === 'progressions';
+
+            // Direction row: hidden in chords AND progressions
+            if (etDirRow) {
+              etDirRow.classList.toggle('hidden', isChords || isProgressions);
+            }
+            // Chord controls: only visible in chords mode
+            if (etChordRow) {
+              etChordRow.classList.toggle('hidden', !isChords);
+            }
 
             if (etSubtitle) {
-              etSubtitle.textContent = etMode === 'chords'
-                ? 'Identify gospel chord types by ear \u2014 7th chords, sus, dim, aug & more.'
-                : 'Train your ear to recognize intervals used in gospel piano.';
+              etSubtitle.textContent = isProgressions
+                ? 'Hear gospel chord progressions and identify them by ear \u2014 ii-V-I, turnarounds & more.'
+                : isChords
+                  ? 'Identify gospel chord types by ear \u2014 7th chords, sus, dim, aug & more.'
+                  : 'Train your ear to recognize intervals used in gospel piano.';
             }
 
             resetEtGame();
@@ -748,7 +883,7 @@
             hideEtResult();
             etGrid.querySelectorAll('.et-interval-btn').forEach(function (b) { b.disabled = false; });
             if (etPlayBtn) {
-              var label = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+              var label = isProgressions ? 'Play Progression' : isChords ? 'Play Chord' : 'Play Interval';
               etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + label;
             }
           });
