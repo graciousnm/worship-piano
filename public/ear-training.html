@@ -240,6 +240,64 @@
     }
     input[type="range"]:focus { outline: none; }
 
+    /* ── Volume Slider ─────────────────────────────────── */
+    #et-volume-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #et-volume-row svg {
+      flex-shrink: 0;
+      color: #71717a;
+      transition: color 0.2s ease;
+    }
+    #et-volume-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: #27272a;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    #et-volume-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 2px solid #09090b;
+      box-shadow: 0 0 4px rgba(0,0,0,0.4);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    #et-volume-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      box-shadow: 0 0 8px rgba(245,158,11,0.4);
+    }
+    #et-volume-slider::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 2px solid #09090b;
+    }
+    #et-volume-slider::-moz-range-thumb:hover {
+      transform: scale(1.15);
+    }
+    #et-volume-pct {
+      min-width: 2.2rem;
+      text-align: right;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #71717a;
+      font-variant-numeric: tabular-nums;
+    }
+
     /* ── Piano Keyboard Visualization ─────────────────── */
     #et-piano-container {
       width: 100%;
@@ -426,6 +484,13 @@
         <div id="et-piano" class="px-1"></div>
       </div>
 
+      <!-- Volume Control -->
+      <div id="et-volume-row" class="px-0.5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4" id="et-volume-icon"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        <input type="range" id="et-volume-slider" min="0" max="1" step="0.01" value="0.8" aria-label="Volume" />
+        <span id="et-volume-pct">80%</span>
+      </div>
+
       <!-- Progression Quiz Status -->
       <div id="et-quiz-status" class="hidden text-center">
         <p class="text-base font-semibold text-zinc-300" id="et-quiz-prompt"></p>
@@ -605,6 +670,8 @@
       var etStreak = 0;
       var etCurrentQuestion = null;
       var etCtx = null;
+      var etMasterGain = null;
+      var etVolume = localStorage.getItem('et-volume') !== null ? parseFloat(localStorage.getItem('et-volume')) : 0.8;
       var etPlaying = false;
       var etTimeoutId = null;
 
@@ -707,12 +774,18 @@
       var etChordRow = document.getElementById('et-chord-row');
       var etVoicingBtns = document.querySelectorAll('[data-etvoicing]');
       var etSpreadBtns = document.querySelectorAll('[data-etspread]');
+      var etVolumeSlider = document.getElementById('et-volume-slider');
+      var etVolumePct = document.getElementById('et-volume-pct');
+      var etVolumeIcon = document.getElementById('et-volume-icon');
 
       // ── Audio ─────────────────────────────────────────────
       function getEtCtx() {
         if (!etCtx) {
           try {
             etCtx = new (window.AudioContext || window.webkitAudioContext)();
+            etMasterGain = etCtx.createGain();
+            etMasterGain.gain.setValueAtTime(etVolume, etCtx.currentTime);
+            etMasterGain.connect(etCtx.destination);
           } catch (e) { return null; }
         }
         if (etCtx.state === 'suspended') { etCtx.resume(); }
@@ -743,7 +816,7 @@
           osc.frequency.setValueAtTime(freq * h.ratio, startTime);
           gain.gain.setValueAtTime(h.gain, startTime);
           gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-          osc.connect(gain).connect(ctx.destination);
+          osc.connect(gain).connect(etMasterGain || ctx.destination);
           osc.start(startTime);
           osc.stop(startTime + duration);
         });
@@ -1347,14 +1420,55 @@
             window.location.href = '/';
           }
         });
+
+        // Volume slider
+        if (etVolumeSlider) {
+          etVolumeSlider.addEventListener('input', function () {
+            var val = parseFloat(this.value);
+            etVolume = val;
+            if (etMasterGain) {
+              etMasterGain.gain.setValueAtTime(val, etCtx.currentTime);
+            }
+            localStorage.setItem('et-volume', val);
+            if (etVolumePct) etVolumePct.textContent = Math.round(val * 100) + '%';
+            if (etVolumeIcon) {
+              var paths;
+              if (val === 0) {
+                paths = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+              } else if (val < 0.35) {
+                paths = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+              } else {
+                paths = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+              }
+              etVolumeIcon.innerHTML = paths;
+            }
+          });
+        }
       }
 
       // ── Init ─────────────────────────────────────────────
+      function restoreVolumeUI() {
+        if (etVolumeSlider) etVolumeSlider.value = etVolume;
+        if (etVolumePct) etVolumePct.textContent = Math.round(etVolume * 100) + '%';
+        if (etVolumeIcon) {
+          var paths;
+          if (etVolume === 0) {
+            paths = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+          } else if (etVolume < 0.35) {
+            paths = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+          } else {
+            paths = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+          }
+          etVolumeIcon.innerHTML = paths;
+        }
+      }
+
       function init() {
         buildPianoKeyboard();
         renderEtGrid();
         etCurrentQuestion = generateEtQuestion();
         bindEvents();
+        restoreVolumeUI();
         // Show initial subtitle
         if (etSubtitle) {
           etSubtitle.textContent = 'Train your ear to recognize intervals used in gospel piano.';
