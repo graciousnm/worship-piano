@@ -3,7 +3,7 @@
 //  Caches static assets for offline access and faster loading.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'worship-piano-v1';
+const CACHE_NAME = 'worship-piano-v2';
 
 // Files to cache on install — the core app shell
 const PRECACHE_URLS = [
@@ -45,7 +45,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// ── Fetch: serve from cache, fall back to network ──────────
+// ── Fetch: network-first for HTML/JS, cache-first for assets ─
 self.addEventListener('fetch', (event) => {
   // Only cache GET requests
   if (event.request.method !== 'GET') return;
@@ -54,19 +54,38 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.pathname.startsWith('/api/')) return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      // Return cached response immediately, then update cache in background
-      const fetchPromise = fetch(event.request).then((response) => {
-        // Only cache valid responses
+  // Determine if this is a navigation (HTML) or JS request
+  const isNavigation = event.request.mode === 'navigate';
+  const isJS = url.pathname.endsWith('.js');
+  const isHTML = url.pathname.endsWith('.html') || url.pathname === '/';
+
+  if (isNavigation || isJS || isHTML) {
+    // ── Network-first for HTML & JS ───────
+    // Always fetch the latest from server. Cache as fallback for offline.
+    event.respondWith(
+      fetch(event.request).then((response) => {
         if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => cached);
+      }).catch(() => caches.match(event.request))
+    );
+  } else {
+    // ── Cache-first for static assets ────
+    // Serve from cache immediately, update in background.
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        const fetchPromise = fetch(event.request).then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        }).catch(() => cached);
 
-      return cached || fetchPromise;
-    })
-  );
+        return cached || fetchPromise;
+      })
+    );
+  }
 });
