@@ -1334,16 +1334,67 @@
   <!-- ═══════════ Application Logic ════════════════════════ -->
   <script src="app.js"></script>
   <script>
-    // Register service worker for PWA offline support
+    // ── Service Worker Registration ──────────────────────
+    function showUpdateToast() {
+      var container = document.getElementById('toast-container');
+      if (!container) return;
+
+      var toast = document.createElement('div');
+      toast.className = 'achievement-toast';
+      toast.style.cssText = 'width:300px;pointer-events:auto;background:rgba(24,24,27,0.95);backdrop-filter:blur(16px);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);';
+      toast.innerHTML =
+        '<span style="flex-shrink:0;width:1.25rem;height:1.25rem;color:#f59e0b">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%">' +
+            '<polyline points="23 4 23 10 17 10"/>' +
+            '<path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>' +
+          '</svg>' +
+        '</span>' +
+        '<div style="flex:1;min-width:0">' +
+          '<p style="font-size:0.75rem;font-weight:600;color:#f59e0b;text-transform:uppercase;letter-spacing:0.04em;margin:0 0 2px">Update Available</p>' +
+          '<p style="font-size:0.7rem;color:#a1a1aa;margin:0">A new version is ready</p>' +
+        '</div>' +
+        '<button class="sw-refresh-btn" style="flex-shrink:0;padding:6px 12px;border-radius:8px;background:#f59e0b;color:#0f172a;border:none;font-size:0.7rem;font-weight:700;cursor:pointer;transition:background 0.15s">Refresh</button>';
+
+      // Click the Refresh button to reload
+      toast.querySelector('.sw-refresh-btn').addEventListener('click', function () {
+        window.location.reload();
+      });
+
+      // Also dismiss on background click
+      toast.addEventListener('click', function (e) {
+        if (e.target.closest('.sw-refresh-btn')) return;
+        dismissUpdateToast(toast);
+      });
+
+      // Auto-dismiss after 12 seconds
+      var autoTimer = setTimeout(function () { dismissUpdateToast(toast); }, 12000);
+
+      // Store timer on toast so we can clear it if dismissed early
+      toast._autoTimer = autoTimer;
+
+      container.prepend(toast);
+    }
+
+    function dismissUpdateToast(toast) {
+      if (toast.classList.contains('dismissing')) return;
+      clearTimeout(toast._autoTimer);
+      toast.classList.add('dismissing');
+      setTimeout(function () { if (toast.parentNode) toast.remove(); }, 300);
+    }
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').then(function (reg) {
-        // Only auto-reload on SW updates, not on first install
+        // On SW update: show a toast instead of auto-reloading
         if (navigator.serviceWorker.controller) {
           reg.addEventListener('updatefound', function () {
-            const newSW = reg.installing;
+            var newSW = reg.installing;
+            var updateHandled = false;
             newSW.addEventListener('statechange', function () {
-              if (this.state === 'activated') {
-                window.location.reload();
+              // Guard: only show toast once, for 'installed' or 'activated'
+              // Some browsers skip 'installed' when skipWaiting() is called
+              if ((this.state === 'installed' || this.state === 'activated') && !updateHandled) {
+                updateHandled = true;
+                showUpdateToast();
               }
             });
           });
