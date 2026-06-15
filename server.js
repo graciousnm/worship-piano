@@ -45,13 +45,22 @@ app.use(compression({ level: 6, threshold: 512 }));
 // CORS
 app.use(cors({ origin: CORS_ORIGIN }));
 
-// Static files with cache headers
+// Static files with differentiated cache headers
 app.use(
   express.static(path.join(__dirname, 'public'), {
-    maxAge: isDev ? 0 : 7 * 24 * 60 * 60 * 1000, // 7 days in production
-    immutable: !isDev,
     etag: true,
     lastModified: true,
+    setHeaders: (res, filePath) => {
+      if (!isDev) {
+        if (filePath.endsWith('.html') || filePath.endsWith('.htm')) {
+          // HTML files: NEVER cache — SW needs fresh HTML on every refresh
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        } else {
+          // Static assets (JS, CSS, images, icons, etc.): 7-day immutable cache
+          res.setHeader('Cache-Control', 'public, max-age=' + (7 * 24 * 60 * 60) + ', immutable');
+        }
+      }
+    },
   })
 );
 

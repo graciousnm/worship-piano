@@ -63,7 +63,7 @@ self.addEventListener('fetch', (event) => {
     // ── Network-first for HTML & JS ───────
     // Always fetch the latest from server. Cache as fallback for offline.
     event.respondWith(
-      fetch(event.request).then((response) => {
+      fetch(event.request, { cache: 'no-cache' }).then((response) => {
         if (response && response.status === 200) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
@@ -76,7 +76,7 @@ self.addEventListener('fetch', (event) => {
     // Serve from cache immediately, update in background.
     event.respondWith(
       caches.match(event.request).then((cached) => {
-        const fetchPromise = fetch(event.request).then((response) => {
+        const fetchPromise = fetch(event.request, { cache: 'no-cache' }).then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
