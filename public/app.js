@@ -759,7 +759,7 @@
       videoId: videoId,
       width: '100%',
       height: '100%',
-      playerVars: { autoplay: 0, modestbranding: 1, rel: 0, fs: 1, controls: 1, iv_load_policy: 3, origin: window.location.origin },
+      playerVars: { autoplay: 0, modestbranding: 1, rel: 0, fs: 1, controls: 1, iv_load_policy: 3, playsinline: 1, origin: window.location.origin },
       events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange, onError: onPlayerError },
     });
   }

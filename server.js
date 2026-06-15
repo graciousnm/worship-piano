@@ -32,9 +32,11 @@ app.use(
         imgSrc: ["'self'", 'data:', 'https://img.youtube.com', 'https://i.ytimg.com', 'https://yt3.ggpht.com'],
         frameSrc: ["'self'", 'https://www.youtube.com'],
         // YouTube iframe API on Safari/iPad needs connect-src for YouTube
-        connectSrc: ["'self'", 'https://www.youtube.com', 'https://i.ytimg.com'],
+        // YouTube iframe API on Safari/iPad needs connect-src for YouTube
+        // Safari enforces connect-src strictly for subdomains the API connects to
+        connectSrc: ["'self'", 'https://www.youtube.com', 'https://youtube.com', 'https://i.ytimg.com', 'https://s.ytimg.com', 'https://www.youtube-nocookie.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        mediaSrc: ["'self'"],
+        mediaSrc: ["'self'", 'https://www.youtube.com', 'https://i.ytimg.com'],
         objectSrc: ["'none'"],
       },
     },
