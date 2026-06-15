@@ -240,9 +240,84 @@
     }
     input[type="range"]:focus { outline: none; }
 
+    /* ── Piano Keyboard Visualization ─────────────────── */
+    #et-piano-container {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    #et-piano-container::-webkit-scrollbar { display: none; }
+
+    #et-piano {
+      display: flex;
+      position: relative;
+      height: 110px;
+      min-width: 100%;
+      padding: 4px 0;
+      user-select: none;
+    }
+
+    .et-white-key {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      background: linear-gradient(180deg, #f4f4f5 0%, #e4e4e7 90%, #d4d4d8 100%);
+      border: 1px solid #a1a1aa;
+      border-radius: 0 0 4px 4px;
+      cursor: default;
+      position: relative;
+      z-index: 1;
+      transition: background 0.08s ease, box-shadow 0.08s ease;
+      margin: 0 -0.5px;
+    }
+    .et-white-key:first-child { margin-left: 0; }
+    .et-white-key:last-child { margin-right: 0; }
+    .et-white-key.active {
+      background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+      box-shadow: 0 0 16px rgba(245,158,11,0.6), 0 0 32px rgba(245,158,11,0.3);
+      z-index: 3;
+    }
+
+    .et-black-key {
+      position: absolute;
+      width: calc(100% / 14 * 0.6);
+      height: 65%;
+      background: linear-gradient(180deg, #27272a 0%, #18181b 50%, #09090b 100%);
+      border: 1px solid #000;
+      border-radius: 0 0 3px 3px;
+      cursor: default;
+      z-index: 2;
+      transition: background 0.08s ease, box-shadow 0.08s ease;
+      pointer-events: none;
+    }
+    .et-black-key.active {
+      background: linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+      box-shadow: 0 0 14px rgba(245,158,11,0.5), 0 0 28px rgba(245,158,11,0.2);
+    }
+
+    .et-key-label {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.5rem;
+      font-weight: 600;
+      color: #a1a1aa;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease, color 0.15s ease;
+    }
+    .et-white-key.active .et-key-label {
+      opacity: 1;
+      color: #78350f;
+    }
+    #et-piano-container:hover .et-key-label { opacity: 0.3; }
+
     @media (max-width: 640px) {
       .et-interval-btn .et-interval-short { font-size: 0.75rem; }
       .et-mode-btn { font-size: 0.65rem; }
+      #et-piano { height: 80px; }
     }
   </style>
 </head>
@@ -343,6 +418,11 @@
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         Play Interval
       </button>
+
+      <!-- Piano Keyboard Visualization -->
+      <div id="et-piano-container" class="rounded-xl border border-zinc-800/60 overflow-hidden" style="background: rgba(24,24,27,0.6);">
+        <div id="et-piano" class="px-1"></div>
+      </div>
 
       <!-- Progression Quiz Status -->
       <div id="et-quiz-status" class="hidden text-center">
@@ -537,6 +617,77 @@
       var etQuizPrompt = document.getElementById('et-quiz-prompt');
       var etQuizDots = document.getElementById('et-quiz-dots');
 
+      // ── Piano Keyboard State ────────────────────────────
+      var WHITE_KEYS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+      var WHITE_KEY_SEMITONES = [0, 2, 4, 5, 7, 9, 11];  // semitone offset for each white key
+      var BLACK_KEYS = ['C#', 'D#', null, 'F#', 'G#', 'A#', null];
+      var PIANO_OCTAVES = 2;  // C4 to B5
+      var PIANO_START_OCTAVE = 4;
+      var etPianoEl = document.getElementById('et-piano');
+      var etPianoKeys = {};  // midi -> DOM element
+
+      function buildPianoKeyboard() {
+        if (!etPianoEl) return;
+        etPianoEl.innerHTML = '';
+        etPianoKeys = {};
+
+        // White keys first
+        for (var o = 0; o < PIANO_OCTAVES; o++) {
+          var octave = PIANO_START_OCTAVE + o;
+          WHITE_KEYS.forEach(function (name) {
+            var midi = (octave + 1) * 12 + WHITE_KEY_SEMITONES[WHITE_KEYS.indexOf(name)];
+            var key = document.createElement('div');
+            key.className = 'et-white-key';
+            key.dataset.midi = midi;
+
+            var label = document.createElement('span');
+            label.className = 'et-key-label';
+            label.textContent = name + octave;
+            key.appendChild(label);
+
+            etPianoEl.appendChild(key);
+            etPianoKeys[midi] = key;
+          });
+        }
+
+        // Black keys positioned absolutely
+        var allWhiteKeys = etPianoEl.querySelectorAll('.et-white-key');
+        var whiteKeyWidth = 100 / allWhiteKeys.length;
+
+        for (var o2 = 0; o2 < PIANO_OCTAVES; o2++) {
+          var octave2 = PIANO_START_OCTAVE + o2;
+          var whiteOffset = o2 * 7;
+
+          BLACK_KEYS.forEach(function (name, i) {
+            if (!name) return;
+            var whiteIdx = WHITE_KEYS.indexOf(name.replace('#', ''));
+            if (whiteIdx < 0) return;
+            var semitone = WHITE_KEY_SEMITONES[whiteIdx];
+            var midi = (octave2 + 1) * 12 + semitone + 1; // Sharp adds 1 semitone
+            var keyIndex = whiteOffset + whiteIdx;
+            var left = (keyIndex + 1) * whiteKeyWidth - (whiteKeyWidth * 0.3);
+
+            var key = document.createElement('div');
+            key.className = 'et-black-key';
+            key.dataset.midi = midi;
+            key.style.left = left + '%';
+
+            etPianoEl.appendChild(key);
+            etPianoKeys[midi] = key;
+          });
+        }
+      }
+
+      function highlightPianoKey(midi, active) {
+        var key = etPianoKeys[midi];
+        if (!key) return;
+        if (active) {
+          key.classList.add('active');
+        } else {
+          key.classList.remove('active');
+        }
+      }
+
       // ── DOM Refs ─────────────────────────────────────────
       var etPlayBtn = document.getElementById('et-play-btn');
       var etGrid = document.getElementById('et-interval-grid');
@@ -566,7 +717,17 @@
         return etCtx;
       }
 
-      function playEtNote(ctx, freq, startTime, duration) {
+      function playEtNote(ctx, freq, startTime, duration, midi) {
+        // Schedule piano keyboard highlight
+        if (midi !== undefined) {
+          var delayMs = Math.max(0, (startTime - ctx.currentTime) * 1000);
+          var holdMs = duration * 1000;
+          setTimeout(function () {
+            highlightPianoKey(midi, true);
+            setTimeout(function () { highlightPianoKey(midi, false); }, holdMs);
+          }, delayMs);
+        }
+
         var harmonics = [
           { ratio: 1, gain: 0.35 },
           { ratio: 2, gain: 0.12 },
@@ -599,8 +760,8 @@
         }
         var ctx = getEtCtx();
         if (!ctx) return;
-        playEtNote(ctx, midiToFreq(midiNote1), ctx.currentTime + 0.05, 0.8);
-        playEtNote(ctx, midiToFreq(midiNote2), ctx.currentTime + 0.05 + 0.8 + 0.5, 0.8);
+        playEtNote(ctx, midiToFreq(midiNote1), ctx.currentTime + 0.05, 0.8, midiNote1);
+        playEtNote(ctx, midiToFreq(midiNote2), ctx.currentTime + 0.05 + 0.8 + 0.5, 0.8, midiNote2);
       }
 
       function playEtChord(chordDef) {
@@ -622,7 +783,7 @@
           } else {
             startTime = ctx.currentTime + 0.05;
           }
-          playEtNote(ctx, midiToFreq(noteMidi), startTime, 1.2);
+          playEtNote(ctx, midiToFreq(noteMidi), startTime, 1.2, noteMidi);
         });
       }
 
@@ -657,7 +818,7 @@
               noteMidi = root + interval;
             }
             var t = startTime + i * (beatDuration + gap);
-            playEtNote(ctx, midiToFreq(noteMidi), t, beatDuration);
+            playEtNote(ctx, midiToFreq(noteMidi), t, beatDuration, noteMidi);
           });
         });
 
@@ -709,7 +870,7 @@
               noteMidi = root + interval;
             }
             var t = startTime + i * (beatDuration + gap);
-            playEtNote(ctx, midiToFreq(noteMidi), t, beatDuration);
+            playEtNote(ctx, midiToFreq(noteMidi), t, beatDuration, noteMidi);
           });
         });
 
@@ -1188,6 +1349,7 @@
 
       // ── Init ─────────────────────────────────────────────
       function init() {
+        buildPianoKeyboard();
         renderEtGrid();
         etCurrentQuestion = generateEtQuestion();
         bindEvents();
