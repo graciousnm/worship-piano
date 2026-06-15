@@ -107,6 +107,7 @@
   const hamburgerProgressText = document.getElementById('hamburger-progress-text');
   const hamburgerProgressBar = document.getElementById('hamburger-progress-bar');
   const hamburgerResetBtn = document.getElementById('hamburger-reset-btn');
+  const installPwaBtn = document.getElementById('install-pwa-btn');
 
   // ── State ─────────────────────────────────────────────────
   let player = null;
@@ -1936,8 +1937,46 @@
     if (pendingVideoId) { const vid = pendingVideoId; pendingVideoId = null; createPlayer(vid); }
   };
 
+  // ── PWA Install Prompt ─────────────────────────────────
+  let deferredPrompt = null;
+
+  function initPwaInstall() {
+    // Don't show if already running as installed app
+    if (window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true) {
+      return;
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installPwaBtn) {
+        installPwaBtn.classList.remove('hidden');
+      }
+    });
+
+    window.addEventListener('appinstalled', function () {
+      deferredPrompt = null;
+      if (installPwaBtn) {
+        installPwaBtn.classList.add('hidden');
+      }
+    });
+
+    if (installPwaBtn) {
+      installPwaBtn.addEventListener('click', async function () {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const result = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        // Hide the button regardless of choice
+        installPwaBtn.classList.add('hidden');
+      });
+    }
+  }
+
   // ── Init ─────────────────────────────────────────────────
   function init() {
+    initPwaInstall();
     loadProgress();
     loadNotes();
     loadWatchProgress();

@@ -11,6 +11,7 @@ const PRECACHE_URLS = [
   '/index.html',
   '/app.js',
   '/favicon.svg',
+  '/tailwind.css',
   '/manifest.json',
   '/curriculum.html',
   '/metronome.html',
