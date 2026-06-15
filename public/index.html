@@ -1371,7 +1371,7 @@
   <!-- ═══════════ PWA Install Banner ════════════════════════ -->
   <div id="pwa-install-banner">
     <div class="banner-inner">
-      <div class="banner-icon">
+      <div class="banner-icon" id="pwa-banner-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px">
           <rect x="2" y="4" width="20" height="16" rx="2"/>
           <path d="M6 20V10"/>
@@ -1381,11 +1381,43 @@
         </svg>
       </div>
       <div class="banner-text">
-        <div class="banner-title">Install Worship Piano</div>
-        <div class="banner-sub">Add to home screen for the best experience</div>
+        <div class="banner-title" id="pwa-banner-title">Install Worship Piano</div>
+        <div class="banner-sub" id="pwa-banner-sub">Add to home screen for the best experience</div>
       </div>
       <button class="banner-install-btn" id="pwa-install-btn">Install</button>
       <button class="banner-dismiss-btn" id="pwa-dismiss-btn" title="Dismiss">×</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ iOS Install Instructions Modal ═════════════ -->
+  <div id="pwa-ios-modal" class="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
+      <button id="pwa-ios-modal-close" class="absolute top-3 right-3 w-7 h-7 flex items-center justify-center bg-zinc-800 rounded-full text-zinc-400 hover:text-white hover:bg-zinc-700 transition text-lg leading-none">&times;</button>
+      <div class="text-center mb-5">
+        <div class="w-14 h-14 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-3" style="color:#f59e0b">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-zinc-200 mb-1">Install on iOS</h3>
+        <p class="text-sm text-zinc-500">Add Worship Piano to your home screen for the best experience.</p>
+      </div>
+      <div class="space-y-4">
+        <div class="flex items-start gap-3">
+          <span class="flex-shrink-0 w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center">1</span>
+          <p class="text-sm text-zinc-400">Tap the <strong class="text-zinc-300">Share</strong> icon <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-zinc-800 text-xs" style="color:#36c">⎔</span> in Safari's bottom toolbar.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="flex-shrink-0 w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center">2</span>
+          <p class="text-sm text-zinc-400">Scroll down and tap <strong class="text-zinc-300">Add to Home Screen</strong>.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="flex-shrink-0 w-7 h-7 rounded-full bg-brand/20 text-brand text-xs font-bold flex items-center justify-center">3</span>
+          <p class="text-sm text-zinc-400">Tap <strong class="text-zinc-300">Add</strong> in the top right corner. That's it!</p>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -31,7 +31,8 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.tailwindcss.com'],
         imgSrc: ["'self'", 'data:', 'https://img.youtube.com', 'https://i.ytimg.com', 'https://yt3.ggpht.com'],
         frameSrc: ["'self'", 'https://www.youtube.com'],
-        connectSrc: ["'self'"],
+        // YouTube iframe API on Safari/iPad needs connect-src for YouTube
+        connectSrc: ["'self'", 'https://www.youtube.com', 'https://i.ytimg.com'],
         fontSrc: ["'self'", 'https://fonts.gstatic.com'],
         mediaSrc: ["'self'"],
         objectSrc: ["'none'"],

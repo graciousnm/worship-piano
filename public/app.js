@@ -1945,11 +1945,41 @@
   const pwaBanner = document.getElementById('pwa-install-banner');
   const pwaInstallBtn = document.getElementById('pwa-install-btn');
   const pwaDismissBtn = document.getElementById('pwa-dismiss-btn');
+  const pwaBannerTitle = document.getElementById('pwa-banner-title');
+  const pwaBannerSub = document.getElementById('pwa-banner-sub');
+  const pwaBannerIcon = document.getElementById('pwa-banner-icon');
+  const pwaIosModal = document.getElementById('pwa-ios-modal');
+  const pwaIosModalClose = document.getElementById('pwa-ios-modal-close');
 
-  function showPwaBanner() {
-    if (!pwaBanner || !deferredPrompt) return;
+  // iOS detection: beforeinstallprompt is Chrome-only, not supported on iOS/iPad
+  function isIOS() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+           typeof window.navigator.standalone !== 'undefined';
+  }
+
+  function showPwaBanner(iOS) {
+    if (!pwaBanner) return;
+
+    // Set banner content based on platform
+    if (iOS) {
+      if (pwaBannerIcon) {
+        pwaBannerIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      }
+      if (pwaBannerTitle) pwaBannerTitle.textContent = 'Install on iOS';
+      if (pwaBannerSub) pwaBannerSub.textContent = 'Tap Share → Add to Home Screen';
+      if (pwaInstallBtn) pwaInstallBtn.textContent = 'How to Install';
+    } else {
+      if (pwaBannerIcon) {
+        pwaBannerIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg>';
+      }
+      if (pwaBannerTitle) pwaBannerTitle.textContent = 'Install Worship Piano';
+      if (pwaBannerSub) pwaBannerSub.textContent = 'Add to home screen for the best experience';
+      if (pwaInstallBtn) pwaInstallBtn.textContent = 'Install';
+    }
+
     pwaBanner.classList.remove('dismissed');
     pwaBanner.classList.add('visible');
+
     // Auto-dismiss after 5 minutes
     clearTimeout(pwaBannerTimer);
     pwaBannerTimer = setTimeout(function () {
@@ -1974,10 +2004,17 @@
       return;
     }
 
+    // iOS: beforeinstallprompt doesn't fire on Safari/iPad, show banner with instructions
+    if (isIOS()) {
+      showPwaBanner(true);
+      return;
+    }
+
+    // Chrome/Android: use beforeinstallprompt
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
       deferredPrompt = e;
-      showPwaBanner();
+      showPwaBanner(false);
     });
 
     window.addEventListener('appinstalled', function () {
@@ -2000,9 +2037,34 @@
         hidePwaBanner();
       });
     }
+  }
 
-    // Also dismiss if user taps outside the banner (on the page)
-    // but NOT on click-away since it's a bottom banner — just keep it simple
+  // ── iOS Instruction Modal (bound separately for both iOS and Android flows) ──
+  if (pwaInstallBtn) {
+    pwaInstallBtn.addEventListener('click', function () {
+      // Only show the iOS instruction modal if on iOS
+      if (isIOS() && pwaIosModal) {
+        pwaIosModal.classList.remove('opacity-0', 'pointer-events-none');
+        pwaIosModal.classList.add('opacity-100', 'pointer-events-auto');
+      }
+      // On Chrome/Android, the async click handler above handles the prompt
+    });
+  }
+
+  if (pwaIosModalClose) {
+    pwaIosModalClose.addEventListener('click', function () {
+      pwaIosModal.classList.add('opacity-0', 'pointer-events-none');
+      pwaIosModal.classList.remove('opacity-100', 'pointer-events-auto');
+    });
+  }
+
+  if (pwaIosModal) {
+    pwaIosModal.addEventListener('click', function (e) {
+      if (e.target === pwaIosModal) {
+        pwaIosModal.classList.add('opacity-0', 'pointer-events-none');
+        pwaIosModal.classList.remove('opacity-100', 'pointer-events-auto');
+      }
+    });
   }
 
   // ── Init ─────────────────────────────────────────────────
