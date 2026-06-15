@@ -1942,7 +1942,7 @@
   let pwaBannerTimer = null;
   const BANNER_DURATION = 5 * 60 * 1000; // 5 minutes
   const PWA_DISMISSED_KEY = 'gospel_piano_pwa_dismissed';
-  const PWA_REAPPEAR_DELAY = 24 * 60 * 60 * 1000; // 24 hours
+  const PWA_REAPPEAR_DELAY = 60 * 1000; // 1 minute for testing (will set back to 24h later)
 
   const pwaBanner = document.getElementById('pwa-install-banner');
   const pwaInstallBtn = document.getElementById('pwa-install-btn');
@@ -2013,7 +2013,7 @@
       return;
     }
 
-    // Check if user dismissed recently — if so, wait 24 hours before showing again
+    // Check if user dismissed recently — if so, wait before showing again
     var shouldShow = true;
     try {
       var dismissedAt = parseInt(localStorage.getItem(PWA_DISMISSED_KEY), 10);
@@ -2024,16 +2024,17 @@
 
     if (!shouldShow) return;
 
-    // iOS: beforeinstallprompt doesn't fire on Safari/iPad, show banner with instructions
+    // iOS: beforeinstallprompt doesn't fire on Safari/iPad, show banner with instructions immediately
     if (isIOS()) {
       showPwaBanner(true);
       return;
     }
 
-    // Chrome/Android: use beforeinstallprompt
+    // Chrome/Android: capture the beforeinstallprompt event if Chrome fires it
     window.addEventListener('beforeinstallprompt', function (e) {
       e.preventDefault();
       deferredPrompt = e;
+      // Show banner as soon as we have the prompt object
       showPwaBanner(false);
     });
 
@@ -2044,19 +2045,36 @@
       hidePwaBanner();
     });
 
+    // Proactive: show banner after a short delay even if beforeinstallprompt hasn't fired.
+    // Chrome may not fire the event immediately (requires engagement signals),
+    // but we still want to prompt the user to install.
+    setTimeout(function () {
+      if (!deferredPrompt) {
+        // Chrome hasn't fired beforeinstallprompt yet — show banner anyway
+        // The Install button will check deferredPrompt and fall back gracefully
+        showPwaBanner(false);
+      }
+    }, 1500);
+
     if (pwaInstallBtn) {
       pwaInstallBtn.addEventListener('click', async function () {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const result = await deferredPrompt.userChoice;
-        deferredPrompt = null;
-        hidePwaBanner();
+        if (deferredPrompt) {
+          // Chrome has fired the event — use the official prompt
+          deferredPrompt.prompt();
+          const result = await deferredPrompt.userChoice;
+          deferredPrompt = null;
+          hidePwaBanner();
+        } else {
+          // No deferred prompt available — tell user to use browser menu
+          alert('To install this app, open your browser menu and select "Add to Home Screen" or "Install App".');
+          hidePwaBanner(true);
+        }
       });
     }
 
     if (pwaDismissBtn) {
       pwaDismissBtn.addEventListener('click', function () {
-        hidePwaBanner(true); // Store dismissal so banner reappears after 24h
+        hidePwaBanner(true); // Store dismissal so banner reappears after cooldown
       });
     }
   }
