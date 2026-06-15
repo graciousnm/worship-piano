@@ -1941,6 +1941,8 @@
   let deferredPrompt = null;
   let pwaBannerTimer = null;
   const BANNER_DURATION = 5 * 60 * 1000; // 5 minutes
+  const PWA_DISMISSED_KEY = 'gospel_piano_pwa_dismissed';
+  const PWA_REAPPEAR_DELAY = 24 * 60 * 60 * 1000; // 24 hours
 
   const pwaBanner = document.getElementById('pwa-install-banner');
   const pwaInstallBtn = document.getElementById('pwa-install-btn');
@@ -1980,17 +1982,23 @@
     pwaBanner.classList.remove('dismissed');
     pwaBanner.classList.add('visible');
 
-    // Auto-dismiss after 5 minutes
+    // Auto-dismiss after 5 minutes (counts as a dismissal)
     clearTimeout(pwaBannerTimer);
     pwaBannerTimer = setTimeout(function () {
-      hidePwaBanner();
+      hidePwaBanner(true);
     }, BANNER_DURATION);
   }
 
-  function hidePwaBanner() {
+  function hidePwaBanner(storeDismissal) {
     if (!pwaBanner) return;
     pwaBanner.classList.add('dismissed');
     clearTimeout(pwaBannerTimer);
+    // Store dismissal timestamp so banner reappears after 24 hours
+    if (storeDismissal) {
+      try {
+        localStorage.setItem(PWA_DISMISSED_KEY, Date.now().toString());
+      } catch (e) { /* localStorage unavailable */ }
+    }
     // Clean up after transition
     setTimeout(function () {
       pwaBanner.classList.remove('visible', 'dismissed');
@@ -2003,6 +2011,17 @@
         window.navigator.standalone === true) {
       return;
     }
+
+    // Check if user dismissed recently — if so, wait 24 hours before showing again
+    var shouldShow = true;
+    try {
+      var dismissedAt = parseInt(localStorage.getItem(PWA_DISMISSED_KEY), 10);
+      if (dismissedAt && Date.now() - dismissedAt < PWA_REAPPEAR_DELAY) {
+        shouldShow = false;
+      }
+    } catch (e) { /* localStorage unavailable */ }
+
+    if (!shouldShow) return;
 
     // iOS: beforeinstallprompt doesn't fire on Safari/iPad, show banner with instructions
     if (isIOS()) {
@@ -2019,6 +2038,8 @@
 
     window.addEventListener('appinstalled', function () {
       deferredPrompt = null;
+      // Clear dismissal timestamp — app is installed, no need to show again
+      try { localStorage.removeItem(PWA_DISMISSED_KEY); } catch (e) {}
       hidePwaBanner();
     });
 
@@ -2034,7 +2055,7 @@
 
     if (pwaDismissBtn) {
       pwaDismissBtn.addEventListener('click', function () {
-        hidePwaBanner();
+        hidePwaBanner(true); // Store dismissal so banner reappears after 24h
       });
     }
   }
