@@ -173,7 +173,10 @@
       currentLesson = lesson;
       currentModule = mod;
       updateMiniPlayerTitle();
-      if (player && typeof player.loadVideoById === 'function') {
+      // Update BOTH players so the PiP player shows the new video
+      if (pipPlayer && typeof pipPlayer.loadVideoById === 'function') {
+        pipPlayer.loadVideoById(lesson.youtube_id);
+      } else if (player && typeof player.loadVideoById === 'function') {
         player.loadVideoById(lesson.youtube_id);
       }
       // Replace the top of viewHistory so Back returns correctly
@@ -1384,30 +1387,66 @@
   }
 
   // ── Mini Player (Picture-in-Picture) ─────────────────
-  // Store original parent of player-container so we can restore it on exit
-  var pipOrigParent = null;
+  // Dedicated YouTube player for the mini player (separate from the main player).
+  // We create a SECOND player instead of moving the existing iframe in the DOM,
+  // which breaks video rendering on all platforms (video goes black, audio persists).
+  var pipPlayer = null;
 
   function enterPipMode() {
     if (!player || !currentLesson) return;
     pipActive = true;
 
-    // Save original parent so we can move player-container back later
-    pipOrigParent = playerContainer.parentNode;
+    // Capture current playback state from the main player
+    var videoId = currentLesson.youtube_id;
+    var currentTime = typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : 0;
+    var wasPlaying = typeof player.getPlayerState === 'function' && player.getPlayerState() === 1;
 
-    // Move the PLAYER-CONTAINER (which holds the iframe) into the mini player.
-    // Moving the iframe itself breaks video rendering on iOS (audio continues
-    // but video goes black). Moving the parent container preserves the iframe's
-    // rendering context because the iframe element itself isn't relocated in the DOM.
+    // Pause the main player (video view is about to be hidden)
+    if (wasPlaying && typeof player.pauseVideo === 'function') {
+      player.pauseVideo();
+    }
+
+    // Create a container for the PiP player inside mini-player-inner
     miniPlayerInner.innerHTML = '';
-    miniPlayerInner.style.padding = '0';
-    miniPlayerInner.appendChild(playerContainer);
-    playerContainer.style.position = 'absolute';
-    playerContainer.style.width = '100%';
-    playerContainer.style.height = '100%';
-    playerContainer.style.boxShadow = 'none';
-    playerContainer.style.border = 'none';
-    playerContainer.style.borderRadius = '0';
-    playerContainer.style.background = '#000';
+    miniPlayerInner.style.position = 'relative';
+    miniPlayerInner.style.width = '100%';
+    miniPlayerInner.style.height = '100%';
+    miniPlayerInner.style.background = '#000';
+
+    var pipDiv = document.createElement('div');
+    pipDiv.id = 'pip-player-inner';
+    pipDiv.style.width = '100%';
+    pipDiv.style.height = '100%';
+    miniPlayerInner.appendChild(pipDiv);
+
+    // Create a separate YouTube player in the mini player
+    if (typeof YT !== 'undefined' && YT.Player) {
+      pipPlayer = new YT.Player('pip-player-inner', {
+        videoId: videoId,
+        width: '100%',
+        height: '100%',
+        playerVars: {
+          autoplay: 0,
+          modestbranding: 1,
+          rel: 0,
+          controls: 1,
+          iv_load_policy: 3,
+          playsinline: 1,
+          origin: window.location.origin
+        },
+        events: {
+          onReady: function () {
+            // Seek to where the main player was
+            if (currentTime > 0 && typeof pipPlayer.seekTo === 'function') {
+              pipPlayer.seekTo(currentTime, true);
+            }
+            if (wasPlaying && typeof pipPlayer.playVideo === 'function') {
+              pipPlayer.playVideo();
+            }
+          }
+        }
+      });
+    }
 
     updateMiniPlayerTitle();
     updateMiniPlayButton();
@@ -1420,19 +1459,20 @@
     pipActive = false;
     stopMetronome();
 
-    // Move player-container back to its original parent in the video view
-    if (pipOrigParent) {
-      // Find the video view's player wrapper area and restore player-container there
-      pipOrigParent.appendChild(playerContainer);
-      // Reset player-container to its original CSS state
-      playerContainer.style.position = '';
-      playerContainer.style.width = '';
-      playerContainer.style.height = '';
-      playerContainer.style.boxShadow = '';
-      playerContainer.style.border = '';
-      playerContainer.style.borderRadius = '';
-      playerContainer.style.background = '';
-      pipOrigParent = null;
+    // Destroy the PiP player (no longer needed)
+    if (pipPlayer && typeof pipPlayer.destroy === 'function') {
+      pipPlayer.destroy();
+    }
+    pipPlayer = null;
+    miniPlayerInner.innerHTML = '';
+
+    // Resume playback on the main player
+    if (currentLesson && player) {
+      if (typeof player.getPlayerState === 'function' && player.getPlayerState() !== 1) {
+        if (typeof player.playVideo === 'function') {
+          player.playVideo();
+        }
+      }
     }
 
     miniPlayer.classList.remove('visible');
@@ -1451,27 +1491,21 @@
     pipActive = false;
     miniPlayer.classList.remove('visible');
 
-    // Destroy the YouTube player first
+    // Destroy the PiP player
+    if (pipPlayer && typeof pipPlayer.destroy === 'function') {
+      pipPlayer.destroy();
+    }
+    pipPlayer = null;
+    miniPlayerInner.innerHTML = '';
+
+    // Destroy the main player too
     if (player && typeof player.destroy === 'function') {
       player.destroy();
     }
     player = null;
 
-    // Move player-container back if needed
-    if (pipOrigParent) {
-      pipOrigParent.appendChild(playerContainer);
-    }
-
-    // Reset player container
-    playerContainer.style.position = '';
-    playerContainer.style.width = '';
-    playerContainer.style.height = '';
-    playerContainer.style.boxShadow = '';
-    playerContainer.style.border = '';
-    playerContainer.style.borderRadius = '';
-    playerContainer.style.background = '';
+    // Reset player container to empty state
     playerContainer.innerHTML = '<div class="text-center empty-glow px-4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:3rem;height:3rem;color:rgba(245,158,11,0.5);margin:0 auto 1rem" class="sm:w-14 sm:h-14"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg><p class="text-lg sm:text-xl font-semibold text-zinc-400 mb-1">Ready to Learn</p><p class="text-xs sm:text-sm text-zinc-600">Select a lesson card to start playing</p></div>';
-    pipOrigParent = null;
     currentLesson = null;
     currentModule = null;
     stopWatchMonitoring();
