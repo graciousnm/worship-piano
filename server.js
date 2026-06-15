@@ -22,6 +22,9 @@ const isDev = process.env.NODE_ENV === 'development';
 // Security headers (helmet with relaxed settings for embedded YouTube)
 app.use(
   helmet({
+    // YouTube requires a valid Referer header to verify the embedding page,
+    // especially on iOS Safari which enforces cross-origin referrer policies strictly.
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
