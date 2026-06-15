@@ -15,6 +15,7 @@ const PORT = parseInt(process.env.PORT, 10) || 3000;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'gospel_piano.db');
 const SYNC_INTERVAL_MS = parseInt(process.env.SYNC_INTERVAL_MS, 10) || 6 * 60 * 60 * 1000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+const SYNC_API_KEY = process.env.SYNC_API_KEY || '';
 const isDev = process.env.NODE_ENV === 'development';
 
 // ── Middleware ──────────────────────────────────────────────
@@ -459,8 +460,23 @@ app.get('/api/modules', (req, res) => {
   });
 });
 
+// ── Auth Middleware ───────────────────────────────────────
+// Simple shared-secret check for mutation endpoints.
+// Set SYNC_API_KEY env var on the server; pass it via x-api-key header.
+function requireSyncAuth(req, res, next) {
+  // If no API key is configured, allow the request (dev mode)
+  if (!SYNC_API_KEY) {
+    return next();
+  }
+  const key = req.headers['x-api-key'];
+  if (!key || key !== SYNC_API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 // ── RSS Sync Endpoint ─────────────────────────────────────
-app.post('/api/sync', (req, res) => {
+app.post('/api/sync', requireSyncAuth, (req, res) => {
   console.log('🔄 Manual RSS sync triggered');
   syncPlaylists(db)
     .then((results) => {
