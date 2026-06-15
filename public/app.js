@@ -1436,6 +1436,8 @@
         },
         events: {
           onReady: function () {
+            // User may have closed PiP before player finished loading
+            if (!pipActive || !pipPlayer) return;
             // Seek to where the main player was
             if (currentTime > 0 && typeof pipPlayer.seekTo === 'function') {
               pipPlayer.seekTo(currentTime, true);
@@ -2136,8 +2138,13 @@
           const result = await deferredPrompt.userChoice;
           deferredPrompt = null;
           hidePwaBanner();
+        } else if (isIOS() && pwaIosModal) {
+          // iOS: show instructions modal instead of an alert
+          hidePwaBanner(false);
+          pwaIosModal.classList.remove('opacity-0', 'pointer-events-none');
+          pwaIosModal.classList.add('opacity-100', 'pointer-events-auto');
         } else {
-          // No deferred prompt available — tell user to use browser menu
+          // Non-iOS, no deferred prompt — tell user to use browser menu
           alert('To install this app, open your browser menu and select "Add to Home Screen" or "Install App".');
           hidePwaBanner(true);
         }
@@ -2151,18 +2158,7 @@
     }
   }
 
-  // ── iOS Instruction Modal (bound separately for both iOS and Android flows) ──
-  if (pwaInstallBtn) {
-    pwaInstallBtn.addEventListener('click', function () {
-      // Only show the iOS instruction modal if on iOS
-      if (isIOS() && pwaIosModal) {
-        pwaIosModal.classList.remove('opacity-0', 'pointer-events-none');
-        pwaIosModal.classList.add('opacity-100', 'pointer-events-auto');
-      }
-      // On Chrome/Android, the async click handler above handles the prompt
-    });
-  }
-
+  // ── iOS Instruction Modal ──
   if (pwaIosModalClose) {
     pwaIosModalClose.addEventListener('click', function () {
       pwaIosModal.classList.add('opacity-0', 'pointer-events-none');

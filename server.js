@@ -120,15 +120,26 @@ db.serialize(() => {
       return;
     }
 
+    function runInitialSync(retries = 3, delay = 5000) {
+      syncPlaylists(db).catch(err => {
+        console.error(`📡 Initial sync error: ${err.message} (${retries} retries left)`);
+        if (retries > 0) {
+          console.log(`  Retrying in ${delay / 1000}s…`);
+          setTimeout(() => runInitialSync(retries - 1, delay * 2), delay);
+        }
+      });
+    }
+
     if (row.count === 0) {
       console.log('🌱 Seeding database with gospel piano curriculum…');
       seedDatabase(() => {
         console.log('📡 Running initial RSS sync…');
-        syncPlaylists(db).catch(err => console.error('Initial sync error:', err.message));
+        runInitialSync();
       });
     } else {
       // DB already exists — run sync to pick up any new playlist videos
-      syncPlaylists(db).catch(err => console.error('Startup sync error:', err.message));
+      console.log('📡 Running initial RSS sync…');
+      runInitialSync();
     }
   });
 });
@@ -489,7 +500,7 @@ app.post('/api/sync', requireSyncAuth, (req, res) => {
     })
     .catch((err) => {
       console.error('Sync error:', err.message);
-      res.status(500).json({ success: false, error: err.message });
+      res.status(500).json({ success: false, error: 'Sync failed' });
     });
 });
 
@@ -520,11 +531,26 @@ const server = app.listen(PORT, () => {
   console.log(`🎹 Worship Piano server running at http://localhost:${PORT}`);
 });
 
-// ── Scheduled RSS Sync (every 6 hours) ────────────────────
-setInterval(() => {
-  console.log('⏰ Scheduled RSS sync triggered');
-  syncPlaylists(db).catch(err => console.error('Scheduled sync error:', err.message));
-}, SYNC_INTERVAL_MS);
+// ── Scheduled RSS Sync (every 6 hours, no overlap) ────────
+let syncing = false;
+function scheduleNextSync() {
+  setTimeout(function runSync() {
+    if (syncing) {
+      console.log('⏰ Skipping scheduled sync — previous sync still running');
+      scheduleNextSync();
+      return;
+    }
+    syncing = true;
+    console.log('⏰ Scheduled RSS sync triggered');
+    syncPlaylists(db)
+      .catch(err => console.error('Scheduled sync error:', err.message))
+      .finally(() => {
+        syncing = false;
+        scheduleNextSync();
+      });
+  }, SYNC_INTERVAL_MS);
+}
+scheduleNextSync();
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
