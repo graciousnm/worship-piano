@@ -1832,7 +1832,6 @@
 
       if (e.key === ' ' || e.code === 'Space') {
         // Don't toggle playback if a modal is open (ear training, badge gallery, etc.)
-        if (etModal && etModal.classList.contains('show')) return;
         if (badgeModal && badgeModal.classList.contains('show')) return;
         e.preventDefault();
         if (player && typeof player.getPlayerState === 'function') {
@@ -2280,7 +2279,6 @@
   var etWrongSpan = document.getElementById('et-wrong');
   var etStreakSpan = document.getElementById('et-streak');
   var etDiffBtns = document.querySelectorAll('.et-diff-btn');
-  var etHamburgerBtn = document.getElementById('hamburger-ear-training');
   var etDirectionBtn = document.getElementById('et-direction');
   var etDirectionDesc = document.getElementById('et-direction-desc');
   var etDirectionBoth = document.getElementById('et-direction-both');
@@ -2679,7 +2677,6 @@
     loadAchievements();
     bindEvents();
     initMetronome();
-    bindEarTrainingEvents();
     loadModules();
   }
 

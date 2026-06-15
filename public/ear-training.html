@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Ear Training — Worship Piano</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link href="/tailwind.css" rel="stylesheet" />
+  <style>
+    body {
+      background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245,158,11,0.05) 0%, transparent 70%), #09090b;
+      min-height: 100vh;
+    }
+
+    /* ── Ear Training Styles ──────────────────────── */
+    .et-diff-btn {
+      flex: 1;
+      padding: 0.45rem 0.5rem;
+      border-radius: 0.6rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      background: rgba(255,255,255,0.04);
+      color: #71717a;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .et-diff-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: #a1a1aa;
+    }
+    .et-diff-btn.active {
+      background: rgba(245,158,11,0.12);
+      color: #f59e0b;
+      border-color: rgba(245,158,11,0.25);
+      box-shadow: 0 0 12px rgba(245,158,11,0.08);
+    }
+
+    .et-play-btn {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border-radius: 1rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #0f172a;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .et-play-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(245,158,11,0.35);
+    }
+    .et-play-btn:active {
+      transform: scale(0.98);
+    }
+    .et-play-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .et-interval-btn {
+      padding: 0.7rem 0.4rem;
+      border-radius: 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.15s ease;
+      cursor: pointer;
+      background: rgba(24,24,27,0.8);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #a1a1aa;
+      position: relative;
+      overflow: hidden;
+    }
+    .et-interval-btn:hover:not(:disabled) {
+      border-color: rgba(245,158,11,0.3);
+      color: #d4d4d8;
+      background: rgba(24,24,27,0.95);
+    }
+    .et-interval-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+    .et-interval-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .et-interval-btn .et-interval-short {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #e4e4e7;
+      margin-bottom: 0.15rem;
+    }
+    .et-interval-btn .et-interval-name {
+      display: block;
+      font-size: 0.6rem;
+      font-weight: 400;
+      color: #71717a;
+    }
+    .et-interval-btn .et-interval-desc {
+      display: block;
+      font-size: 0.5rem;
+      color: #52525b;
+      margin-top: 0.1rem;
+    }
+    .et-interval-btn.correct {
+      background: rgba(16,185,129,0.15) !important;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 12px rgba(16,185,129,0.2);
+    }
+    .et-interval-btn.correct .et-interval-short { color: #34d399; }
+    .et-interval-btn.wrong {
+      background: rgba(239,68,68,0.15) !important;
+      border-color: #ef4444 !important;
+      box-shadow: 0 0 12px rgba(239,68,68,0.2);
+    }
+    .et-interval-btn.wrong .et-interval-short { color: #f87171; }
+    .et-interval-btn.reveal-correct {
+      background: rgba(16,185,129,0.1) !important;
+      border-color: rgba(16,185,129,0.3) !important;
+    }
+    .et-interval-btn.reveal-correct .et-interval-short { color: #34d399; }
+
+    .et-result {
+      padding: 0.8rem 1rem;
+      border-radius: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      animation: fadeInResult 0.3s ease;
+    }
+    @keyframes fadeInResult {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .et-result.correct { background: rgba(16,185,129,0.1); color: #34d399; }
+    .et-result.wrong { background: rgba(239,68,68,0.1); color: #f87171; }
+    .et-result-next-btn {
+      padding: 0.4rem 0.9rem;
+      border-radius: 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #d4d4d8;
+      transition: all 0.15s ease;
+    }
+    .et-result-next-btn:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    .et-dir-btn {
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.5rem;
+      font-size: 0.65rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background: rgba(255,255,255,0.04);
+      color: #71717a;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .et-dir-btn:hover { color: #a1a1aa; background: rgba(255,255,255,0.08); }
+    .et-dir-btn.active { background: rgba(245,158,11,0.12); color: #f59e0b; border-color: rgba(245,158,11,0.25); }
+
+    .et-mode-btn {
+      flex: 1;
+      padding: 0.5rem 0.5rem;
+      border-radius: 0.6rem;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      background: rgba(255,255,255,0.04);
+      color: #71717a;
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+    .et-mode-btn:hover { background: rgba(255,255,255,0.08); color: #a1a1aa; }
+    .et-mode-btn.active { background: rgba(16,185,129,0.12); color: #34d399; border-color: rgba(16,185,129,0.25); box-shadow: 0 0 12px rgba(16,185,129,0.08); }
+
+    .et-wave-icon {
+      animation: wavePulse 1.5s ease-in-out infinite;
+    }
+    @keyframes wavePulse {
+      0%, 100% { opacity: 0.4; transform: scaleY(1); }
+      50% { opacity: 0.9; transform: scaleY(1.15); }
+    }
+    .et-playing {
+      animation: etPlaying 0.8s ease-in-out infinite alternate;
+    }
+    @keyframes etPlaying {
+      from { box-shadow: 0 4px 20px rgba(245,158,11,0.25); }
+      to { box-shadow: 0 4px 30px rgba(245,158,11,0.45); }
+    }
+
+    /* Custom scrollbar */
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Range slider */
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 2px solid #09090b;
+      box-shadow: 0 0 4px rgba(0,0,0,0.4);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b;
+      cursor: pointer;
+      border: 2px solid #09090b;
+    }
+    input[type="range"]:focus { outline: none; }
+
+    @media (max-width: 640px) {
+      .et-interval-btn .et-interval-short { font-size: 0.75rem; }
+      .et-mode-btn { font-size: 0.65rem; }
+    }
+  </style>
+</head>
+<body class="text-zinc-200 font-sans antialiased flex flex-col min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-zinc-800/60 flex-shrink-0" style="background: rgba(24,24,27,0.85); backdrop-filter: blur(16px);">
+    <div class="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 no-underline hover:opacity-80 transition">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" style="color: rgba(245,158,11,0.7);"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg>
+        <span class="hidden sm:inline text-base font-bold"><span class="text-brand">Worship</span> <span class="text-zinc-300">Piano</span></span>
+      </a>
+      <h1 class="text-sm sm:text-base font-semibold text-zinc-400 flex items-center gap-1.5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Ear Training
+      </h1>
+      <a href="/" class="text-xs text-zinc-600 hover:text-brand transition no-underline">← Back</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex items-start justify-center px-4 py-6">
+    <div class="w-full max-w-lg mx-auto flex flex-col gap-5">
+
+      <!-- Title -->
+      <div class="text-center">
+        <h2 class="text-xl font-bold text-zinc-200 flex items-center justify-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" style="color:#f59e0b"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Ear Training
+        </h2>
+        <p id="et-subtitle" class="text-xs text-zinc-500 mt-0.5">Train your ear to recognize intervals used in gospel piano.</p>
+      </div>
+
+      <!-- Mode Tabs -->
+      <div class="flex gap-1.5">
+        <button class="et-mode-btn active" data-etmode="intervals">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><line x1="6" y1="4" x2="6" y2="20"/><line x1="10" y1="9" x2="10" y2="20"/><line x1="14" y1="7" x2="14" y2="20"/><line x1="18" y1="11" x2="18" y2="20"/></svg> Intervals
+        </button>
+        <button class="et-mode-btn" data-etmode="chords">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 20V10"/><path d="M10 20V10"/><path d="M14 20V4"/><path d="M18 20V10"/></svg> Chords
+        </button>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="flex items-center justify-center gap-4 text-xs">
+        <span class="flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-emerald-400"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="et-correct" class="text-emerald-400 font-bold">0</span>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-red-400"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          <span id="et-wrong" class="text-red-400 font-bold">0</span>
+        </span>
+        <span class="flex items-center gap-1.5">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5 text-orange-400"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <span id="et-streak" class="text-orange-400 font-bold">0</span>
+          <span class="text-zinc-600">streak</span>
+        </span>
+      </div>
+
+      <!-- Difficulty Tabs -->
+      <div class="flex gap-1.5">
+        <button class="et-diff-btn active" data-diff="beginner">Beginner</button>
+        <button class="et-diff-btn" data-diff="intermediate">Intermediate</button>
+        <button class="et-diff-btn" data-diff="advanced">Advanced</button>
+      </div>
+
+      <!-- Settings Row — Direction (intervals mode) -->
+      <div id="et-dir-row" class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-[0.65rem] text-zinc-500 font-medium">Direction:</span>
+          <button class="et-dir-btn active" data-dir="ascending">↑ Ascending</button>
+          <button class="et-dir-btn" data-dir="descending">↓ Descending</button>
+          <button class="et-dir-btn" data-dir="both">↕ Both</button>
+        </div>
+      </div>
+
+      <!-- Settings Row — Chord controls (chords mode) -->
+      <div id="et-chord-row" class="flex items-center justify-between hidden">
+        <div class="flex items-center gap-2">
+          <span class="text-[0.65rem] text-zinc-500 font-medium">Play:</span>
+          <button class="et-dir-btn active" data-etvoicing="block">Block</button>
+          <button class="et-dir-btn" data-etvoicing="arpeggiated">Arp.</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-[0.65rem] text-zinc-500 font-medium">Voicing:</span>
+          <button class="et-dir-btn active" data-etspread="close">Close</button>
+          <button class="et-dir-btn" data-etspread="spread">Spread</button>
+        </div>
+      </div>
+
+      <!-- Play Button -->
+      <button id="et-play-btn" class="et-play-btn">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        Play Interval
+      </button>
+
+      <!-- Interval/Chord Answer Grid -->
+      <div id="et-interval-grid" class="grid grid-cols-3 gap-2"></div>
+
+      <!-- Result Feedback -->
+      <div id="et-result" class="et-result hidden">
+        <span id="et-result-text"></span>
+        <button id="et-next-btn" class="et-result-next-btn">Next →</button>
+      </div>
+
+      <!-- Keyboard Shortcuts Hint -->
+      <div class="text-center text-[0.55rem] text-zinc-700 leading-relaxed">
+        <span class="inline-block border border-zinc-800/60 rounded px-1.5 py-0.5 font-mono mx-0.5">Space</span> Play ·
+        <span class="inline-block border border-zinc-800/60 rounded px-1.5 py-0.5 font-mono mx-0.5">Enter</span> Next ·
+        <a href="/" class="inline-block border border-zinc-800/60 rounded px-1.5 py-0.5 font-mono mx-0.5 text-zinc-600 hover:text-zinc-400 no-underline transition">Ctrl+E</a> Back to app
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      // ── Music Theory Helpers ──────────────────────────
+      var NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+      function midiToFreq(midi) {
+        return 440 * Math.pow(2, (midi - 69) / 12);
+      }
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      // ── Interval Definitions ──────────────────────────
+      var ET_INTERVALS = {
+        beginner: [
+          { semitones: 3, name: 'Minor 3rd', short: 'm3' },
+          { semitones: 4, name: 'Major 3rd', short: 'M3' },
+          { semitones: 5, name: 'Perfect 4th', short: 'P4' },
+          { semitones: 7, name: 'Perfect 5th', short: 'P5' },
+          { semitones: 12, name: 'Octave', short: '8ve' },
+        ],
+        intermediate: [
+          { semitones: 3, name: 'Minor 3rd', short: 'm3' },
+          { semitones: 4, name: 'Major 3rd', short: 'M3' },
+          { semitones: 5, name: 'Perfect 4th', short: 'P4' },
+          { semitones: 7, name: 'Perfect 5th', short: 'P5' },
+          { semitones: 8, name: 'Minor 6th', short: 'm6' },
+          { semitones: 9, name: 'Major 6th', short: 'M6' },
+          { semitones: 10, name: 'Minor 7th', short: 'm7' },
+          { semitones: 11, name: 'Major 7th', short: 'M7' },
+          { semitones: 12, name: 'Octave', short: '8ve' },
+        ],
+        advanced: [
+          { semitones: 1, name: 'Minor 2nd', short: 'm2' },
+          { semitones: 2, name: 'Major 2nd', short: 'M2' },
+          { semitones: 3, name: 'Minor 3rd', short: 'm3' },
+          { semitones: 4, name: 'Major 3rd', short: 'M3' },
+          { semitones: 5, name: 'Perfect 4th', short: 'P4' },
+          { semitones: 6, name: 'Tritone', short: 'TT' },
+          { semitones: 7, name: 'Perfect 5th', short: 'P5' },
+          { semitones: 8, name: 'Minor 6th', short: 'm6' },
+          { semitones: 9, name: 'Major 6th', short: 'M6' },
+          { semitones: 10, name: 'Minor 7th', short: 'm7' },
+          { semitones: 11, name: 'Major 7th', short: 'M7' },
+          { semitones: 12, name: 'Octave', short: '8ve' },
+        ],
+      };
+
+      // ── Chord Definitions (gospel-piano focused) ──────
+      var ET_CHORDS = {
+        beginner: [
+          { intervals: [0, 4, 7, 11], name: 'Major 7', short: 'maj7', desc: 'Warm, dreamy' },
+          { intervals: [0, 4, 7, 10], name: 'Dominant 7', short: '7', desc: 'Bluesy, tense' },
+          { intervals: [0, 3, 7, 10], name: 'Minor 7', short: 'm7', desc: 'Soulful, mellow' },
+        ],
+        intermediate: [
+          { intervals: [0, 4, 7, 11], name: 'Major 7', short: 'maj7', desc: 'Warm, dreamy' },
+          { intervals: [0, 4, 7, 10], name: 'Dominant 7', short: '7', desc: 'Bluesy, tense' },
+          { intervals: [0, 3, 7, 10], name: 'Minor 7', short: 'm7', desc: 'Soulful, mellow' },
+          { intervals: [0, 3, 6, 10], name: 'Minor 7 flat 5', short: 'm7\u266d5', desc: 'Dark, passing' },
+          { intervals: [0, 3, 6, 9], name: 'Diminished 7', short: 'dim7', desc: 'Tense, passing' },
+          { intervals: [0, 4, 8], name: 'Augmented', short: 'aug', desc: 'Dreamy, unresolved' },
+          { intervals: [0, 5, 7, 10], name: 'Sus 4', short: 'sus4', desc: 'Open, modern' },
+        ],
+        advanced: [
+          { intervals: [0, 4, 7, 11], name: 'Major 7', short: 'maj7', desc: 'Warm, dreamy' },
+          { intervals: [0, 4, 7, 10], name: 'Dominant 7', short: '7', desc: 'Bluesy, tense' },
+          { intervals: [0, 3, 7, 10], name: 'Minor 7', short: 'm7', desc: 'Soulful, mellow' },
+          { intervals: [0, 3, 6, 10], name: 'Minor 7 flat 5', short: 'm7\u266d5', desc: 'Dark, passing' },
+          { intervals: [0, 3, 6, 9], name: 'Diminished 7', short: 'dim7', desc: 'Tense, passing' },
+          { intervals: [0, 4, 8], name: 'Augmented', short: 'aug', desc: 'Dreamy, unresolved' },
+          { intervals: [0, 5, 7, 10], name: 'Sus 4', short: 'sus4', desc: 'Open, modern' },
+          { intervals: [0, 3, 7, 11], name: 'Minor Major 7', short: 'mMaj7', desc: 'Haunting, cinematic' },
+          { intervals: [0, 5, 7, 10, 14], name: '7 Sus 4', short: '7sus4', desc: 'Gospel passing chord' },
+        ],
+      };
+
+      // ── State ────────────────────────────────────────────
+      var etDifficulty = 'beginner';
+      var etDirection = 'ascending';
+      var etMode = 'intervals';
+      var etVoicing = 'block';
+      var etSpread = 'close';
+      var etCorrect = 0;
+      var etWrong = 0;
+      var etStreak = 0;
+      var etCurrentQuestion = null;
+      var etCtx = null;
+      var etPlaying = false;
+      var etTimeoutId = null;
+
+      // ── DOM Refs ─────────────────────────────────────────
+      var etPlayBtn = document.getElementById('et-play-btn');
+      var etGrid = document.getElementById('et-interval-grid');
+      var etResult = document.getElementById('et-result');
+      var etResultText = document.getElementById('et-result-text');
+      var etNextBtn = document.getElementById('et-next-btn');
+      var etCorrectSpan = document.getElementById('et-correct');
+      var etWrongSpan = document.getElementById('et-wrong');
+      var etStreakSpan = document.getElementById('et-streak');
+      var etDiffBtns = document.querySelectorAll('.et-diff-btn');
+      var etDirBtns = document.querySelectorAll('[data-dir]');
+      var etSubtitle = document.getElementById('et-subtitle');
+      var etModeBtns = document.querySelectorAll('.et-mode-btn');
+      var etDirRow = document.getElementById('et-dir-row');
+      var etChordRow = document.getElementById('et-chord-row');
+      var etVoicingBtns = document.querySelectorAll('[data-etvoicing]');
+      var etSpreadBtns = document.querySelectorAll('[data-etspread]');
+
+      // ── Audio ─────────────────────────────────────────────
+      function getEtCtx() {
+        if (!etCtx) {
+          try {
+            etCtx = new (window.AudioContext || window.webkitAudioContext)();
+          } catch (e) { return null; }
+        }
+        if (etCtx.state === 'suspended') { etCtx.resume(); }
+        return etCtx;
+      }
+
+      function playEtNote(ctx, freq, startTime, duration) {
+        var harmonics = [
+          { ratio: 1, gain: 0.35 },
+          { ratio: 2, gain: 0.12 },
+          { ratio: 3, gain: 0.06 },
+          { ratio: 4, gain: 0.03 },
+        ];
+        harmonics.forEach(function (h) {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq * h.ratio, startTime);
+          gain.gain.setValueAtTime(h.gain, startTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        });
+      }
+
+      function playEtInterval(interval) {
+        var midiRoot = 60 + Math.floor(Math.random() * 24);
+        var isDescending = etDirection === 'descending' || (etDirection === 'both' && Math.random() < 0.5);
+        var midiNote1, midiNote2;
+        if (isDescending) {
+          midiNote1 = midiRoot + 12;
+          midiNote2 = midiRoot + 12 - interval.semitones;
+        } else {
+          midiNote1 = midiRoot;
+          midiNote2 = midiRoot + interval.semitones;
+        }
+        var ctx = getEtCtx();
+        if (!ctx) return;
+        playEtNote(ctx, midiToFreq(midiNote1), ctx.currentTime + 0.05, 0.8);
+        playEtNote(ctx, midiToFreq(midiNote2), ctx.currentTime + 0.05 + 0.8 + 0.5, 0.8);
+      }
+
+      function playEtChord(chordDef) {
+        var midiRoot = 48 + Math.floor(Math.random() * 24);
+        var isSpread = etSpread === 'spread';
+        var ctx = getEtCtx();
+        if (!ctx) return;
+        chordDef.intervals.forEach(function (interval, i) {
+          var noteMidi;
+          if (isSpread) {
+            if (i === 0) noteMidi = midiRoot;
+            else noteMidi = midiRoot + 12 + interval;
+          } else {
+            noteMidi = midiRoot + interval;
+          }
+          var startTime;
+          if (etVoicing === 'arpeggiated') {
+            startTime = ctx.currentTime + 0.05 + i * 0.15;
+          } else {
+            startTime = ctx.currentTime + 0.05;
+          }
+          playEtNote(ctx, midiToFreq(noteMidi), startTime, 1.2);
+        });
+      }
+
+      // ── Game Logic ───────────────────────────────────────
+      function generateEtQuestion() {
+        if (etMode === 'chords') {
+          var choices = ET_CHORDS[etDifficulty];
+          return { chord: choices[Math.floor(Math.random() * choices.length)], answered: false };
+        } else {
+          var intervals = ET_INTERVALS[etDifficulty];
+          return { interval: intervals[Math.floor(Math.random() * intervals.length)], answered: false };
+        }
+      }
+
+      function renderEtGrid() {
+        if (etMode === 'chords') {
+          var choices = ET_CHORDS[etDifficulty];
+          etGrid.innerHTML = choices.map(function (c) {
+            return '<button class="et-interval-btn" data-etshort="' + escapeHtml(c.short) + '">' +
+              '<span class="et-interval-short">' + c.short + '</span>' +
+              '<span class="et-interval-name">' + c.name + '</span>' +
+              '<span class="et-interval-desc">' + c.desc + '</span>' +
+            '</button>';
+          }).join('');
+        } else {
+          var intervals = ET_INTERVALS[etDifficulty];
+          etGrid.innerHTML = intervals.map(function (intv) {
+            return '<button class="et-interval-btn" data-semitones="' + intv.semitones + '">' +
+              '<span class="et-interval-short">' + intv.short + '</span>' +
+              '<span class="et-interval-name">' + intv.name + '</span>' +
+            '</button>';
+          }).join('');
+        }
+      }
+
+      function resetEtGame() {
+        etCorrect = 0; etWrong = 0; etStreak = 0;
+        updateEtScoreUI();
+      }
+
+      function updateEtScoreUI() {
+        if (etCorrectSpan) etCorrectSpan.textContent = etCorrect;
+        if (etWrongSpan) etWrongSpan.textContent = etWrong;
+        if (etStreakSpan) etStreakSpan.textContent = etStreak;
+      }
+
+      function showEtResult(isCorrect, correctAnswer) {
+        etResult.classList.remove('hidden', 'correct', 'wrong');
+        if (isCorrect) {
+          etResult.classList.add('correct');
+          etResultText.textContent = '\u2713 Correct! (' + correctAnswer.name + ')';
+        } else {
+          etResult.classList.add('wrong');
+          etResultText.textContent = '\u2717 Incorrect \u2014 it was ' + correctAnswer.name + ' (' + correctAnswer.short + ')';
+        }
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+          if (etMode === 'chords') {
+            if (btn.dataset.etshort === correctAnswer.short) {
+              btn.classList.add(isCorrect ? 'correct' : 'reveal-correct');
+            }
+          } else {
+            if (parseInt(btn.dataset.semitones, 10) === correctAnswer.semitones) {
+              btn.classList.add(isCorrect ? 'correct' : 'reveal-correct');
+            }
+          }
+        });
+      }
+
+      function hideEtResult() {
+        etResult.classList.add('hidden');
+        etResult.classList.remove('correct', 'wrong');
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+          btn.classList.remove('correct', 'wrong', 'reveal-correct');
+        });
+      }
+
+      function handleEtAnswer(semitonesOrShort) {
+        if (!etCurrentQuestion || etCurrentQuestion.answered) return;
+        var correctAnswer = etCurrentQuestion.interval || etCurrentQuestion.chord;
+        var isCorrect;
+        if (etMode === 'chords') {
+          isCorrect = semitonesOrShort === correctAnswer.short;
+          if (!isCorrect) {
+            etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+              if (btn.dataset.etshort === semitonesOrShort) btn.classList.add('wrong');
+            });
+          }
+        } else {
+          isCorrect = semitonesOrShort === correctAnswer.semitones;
+          if (!isCorrect) {
+            etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) {
+              if (parseInt(btn.dataset.semitones, 10) === semitonesOrShort) btn.classList.add('wrong');
+            });
+          }
+        }
+        if (isCorrect) { etCorrect++; etStreak++; }
+        else { etWrong++; etStreak = 0; }
+        etCurrentQuestion.answered = true;
+        updateEtScoreUI();
+        showEtResult(isCorrect, correctAnswer);
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = true; });
+      }
+
+      function nextEtQuestion() {
+        hideEtResult();
+        etGrid.querySelectorAll('.et-interval-btn').forEach(function (btn) { btn.disabled = false; });
+        etCurrentQuestion = generateEtQuestion();
+      }
+
+      function playEtCurrent() {
+        if (!etCurrentQuestion || etCurrentQuestion.answered) nextEtQuestion();
+        var answer = etCurrentQuestion.interval || etCurrentQuestion.chord;
+        if (!answer) return;
+        etPlaying = true;
+        etPlayBtn.disabled = true;
+        var label = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+        etPlayBtn.innerHTML = '<svg class="w-5 h-5 et-wave-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Playing\u2026';
+        var timeoutMs = 2500;
+        if (etMode === 'chords') {
+          playEtChord(answer);
+        } else {
+          playEtInterval(answer);
+        }
+        if (etTimeoutId) clearTimeout(etTimeoutId);
+        etTimeoutId = setTimeout(function () {
+          etPlaying = false;
+          etPlayBtn.disabled = false;
+          var newLabel = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+          etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + newLabel;
+        }, timeoutMs);
+      }
+
+      // ── Event Bindings ───────────────────────────────────
+      function bindEvents() {
+        // Play button
+        if (etPlayBtn) {
+          etPlayBtn.addEventListener('click', function () {
+            if (etPlaying) return;
+            playEtCurrent();
+          });
+        }
+
+        // Answer grid
+        if (etGrid) {
+          etGrid.addEventListener('click', function (e) {
+            var btn = e.target.closest('.et-interval-btn');
+            if (!btn || btn.disabled) return;
+            if (etMode === 'chords') {
+              handleEtAnswer(btn.dataset.etshort);
+            } else {
+              handleEtAnswer(parseInt(btn.dataset.semitones, 10));
+            }
+          });
+        }
+
+        // Next button
+        if (etNextBtn) {
+          etNextBtn.addEventListener('click', nextEtQuestion);
+        }
+
+        // Difficulty tabs
+        etDiffBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (etPlaying) return;
+            etDiffBtns.forEach(function (b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            etDifficulty = this.dataset.diff;
+            resetEtGame();
+            renderEtGrid();
+            etCurrentQuestion = generateEtQuestion();
+            hideEtResult();
+            etGrid.querySelectorAll('.et-interval-btn').forEach(function (b) { b.disabled = false; });
+          });
+        });
+
+        // Direction buttons
+        etDirBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (etPlaying) return;
+            etDirBtns.forEach(function (b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            etDirection = this.dataset.dir;
+          });
+        });
+
+        // Mode tabs
+        etModeBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (etPlaying) return;
+            etModeBtns.forEach(function (b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            var newMode = this.dataset.etmode;
+            if (newMode === etMode) return;
+            etMode = newMode;
+
+            if (etDirRow) etDirRow.classList.toggle('hidden', etMode === 'chords');
+            if (etChordRow) etChordRow.classList.toggle('hidden', etMode === 'intervals');
+
+            if (etSubtitle) {
+              etSubtitle.textContent = etMode === 'chords'
+                ? 'Identify gospel chord types by ear \u2014 7th chords, sus, dim, aug & more.'
+                : 'Train your ear to recognize intervals used in gospel piano.';
+            }
+
+            resetEtGame();
+            renderEtGrid();
+            etCurrentQuestion = generateEtQuestion();
+            hideEtResult();
+            etGrid.querySelectorAll('.et-interval-btn').forEach(function (b) { b.disabled = false; });
+            if (etPlayBtn) {
+              var label = etMode === 'chords' ? 'Play Chord' : 'Play Interval';
+              etPlayBtn.innerHTML = '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> ' + label;
+            }
+          });
+        });
+
+        // Voicing controls
+        etVoicingBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (etPlaying) return;
+            etVoicingBtns.forEach(function (b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            etVoicing = this.dataset.etvoicing;
+          });
+        });
+
+        // Spread controls
+        etSpreadBtns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (etPlaying) return;
+            etSpreadBtns.forEach(function (b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            etSpread = this.dataset.etspread;
+          });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function (e) {
+          if (e.key === ' ' || e.code === 'Space') {
+            e.preventDefault();
+            if (etPlayBtn && !etPlayBtn.disabled) etPlayBtn.click();
+          } else if (e.key === 'Enter' && !etResult.classList.contains('hidden') && etNextBtn) {
+            etNextBtn.click();
+          }
+        });
+
+        // Ctrl+E toggle
+        document.addEventListener('keydown', function (e) {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+            e.preventDefault();
+            window.location.href = '/';
+          }
+        });
+      }
+
+      // ── Init ─────────────────────────────────────────────
+      function init() {
+        renderEtGrid();
+        etCurrentQuestion = generateEtQuestion();
+        bindEvents();
+        // Show initial subtitle
+        if (etSubtitle) {
+          etSubtitle.textContent = 'Train your ear to recognize intervals used in gospel piano.';
+        }
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+      else init();
+    })();
+  </script>
+</body>
+</html>
