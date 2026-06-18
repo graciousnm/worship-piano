@@ -15,7 +15,8 @@
     "test": "echo \"No tests yet\" && exit 0",
     "build:css": "npx tailwindcss -i public/styles.css -o public/tailwind.css --minify",
     "postinstall": "npm run build:css",
-    "syntax": "node --check server.js && node --check public/app.js && echo '✅ Syntax OK'"
+    "syntax": "node --check server.js && node --check sync-rss.js && node --check scripts/swap-youtube.js && node --check public/app.js && echo '✅ Syntax OK'",
+    "swap": "node scripts/swap-youtube.js"
   },
   "engines": {
     "node": ">=18.0.0"
