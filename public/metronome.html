@@ -156,16 +156,9 @@
         <span id="beat-count" class="text-3xl sm:text-4xl font-bold text-zinc-600 tabular-nums">1</span>
       </div>
 
-      <!-- Beat Bars Visualizer -->
+      <!-- Beat Bars Visualizer (populated dynamically to match time signature) -->
       <div id="beat-bar-container" class="w-full max-w-xs justify-center">
-        <div class="beat-bar" style="height:60%"></div>
-        <div class="beat-bar" style="height:40%"></div>
-        <div class="beat-bar" style="height:80%"></div>
-        <div class="beat-bar" style="height:30%"></div>
-        <div class="beat-bar" style="height:55%"></div>
-        <div class="beat-bar" style="height:45%"></div>
-        <div class="beat-bar" style="height:70%"></div>
-        <div class="beat-bar" style="height:35%"></div>
+        <!-- Bars are rebuilt by buildBeatBars() based on the selected time signature -->
       </div>
 
       <!-- Beat Dots (time signature indicator) -->
@@ -248,7 +241,6 @@
       const beatIndicator = document.getElementById('beat-indicator');
       const beatCount = document.getElementById('beat-count');
       const beatDots = document.getElementById('beat-dots');
-      const beatBars = document.querySelectorAll('.beat-bar');
 
       // ── State ─────────────────────────────────────────
       let ctx = null;
@@ -263,6 +255,26 @@
       const MAX_TAP_GAP = 2000;
       const MIN_TAP_GAP = 200;
 
+      // ── Beat bars — dynamic, rebuild on time-signature change ──
+      // Placed AFTER the state vars so the initial `buildBeatBars(beatsPerBar)` call
+      // doesn't hit a TDZ ReferenceError on `beatsPerBar` (which would kill the IIFE).
+      const beatBarHeights = [60, 80, 50, 70, 90, 55, 75, 45];
+      let beatBars = [];
+
+      function buildBeatBars(count) {
+        const container = document.getElementById('beat-bar-container');
+        container.innerHTML = '';
+        for (let i = 0; i < count; i++) {
+          const bar = document.createElement('div');
+          bar.className = 'beat-bar';
+          // Use predefined heights so rebuilds look identical across renders
+          bar.style.height = beatBarHeights[i % beatBarHeights.length] + '%';
+          container.appendChild(bar);
+        }
+        beatBars = container.querySelectorAll('.beat-bar');
+      }
+      buildBeatBars(beatsPerBar);
+
       // ── Beat dots count ───────────────────────────────
       function updateBeatDots(count) {
         beatDots.innerHTML = '';
@@ -274,11 +286,11 @@
       }
       updateBeatDots(beatsPerBar);
 
-      // ── Update beat bars for visual variety ────────────
+      // ── Update beat bars (highlight the currently-playing beat) ──
       function updateBeatBars(activeIdx, isAccent) {
         beatBars.forEach((bar, i) => {
           bar.classList.remove('active', 'accent');
-          if (i % beatsPerBar === activeIdx) {
+          if (i === activeIdx) {
             bar.classList.add(isAccent ? 'accent' : 'active');
           }
         });
@@ -307,6 +319,7 @@
         beatsPerBar = parseInt(tsSelect.value, 10);
         beatIdx = 0;
         updateBeatDots(beatsPerBar);
+        buildBeatBars(beatsPerBar); // Rebuild visual bars to match new time signature
       });
 
       // ── Volume ────────────────────────────────────────
