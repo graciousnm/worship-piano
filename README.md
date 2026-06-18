@@ -1,6 +1,6 @@
 # 🎹 Worship Piano Learning Platform
 
-A self-hosted, browser-based worship piano curriculum with interactive YouTube lessons, progress tracking, ear training, metronome, achievement badges, and PWA support. Progress through five phases — from your first note to leading worship and mastering your ministry.
+A self-hosted, browser-based worship piano curriculum with interactive YouTube lessons, progress tracking, a built-in metronome, achievement badges, and PWA support. Progress through five phases — from your first note to leading worship and mastering your ministry.
 
 > Built in collaboration with Codebuff AI — all 17 modules, 88+ lessons, and features were developed through conversational coding.
 
@@ -16,7 +16,6 @@ A self-hosted, browser-based worship piano curriculum with interactive YouTube l
 - **Home page** — Phase card grid with progress bars (`https://worship-piano.mooo.com`)
 - **Lesson view** — Module cards with thumbnails, difficulty tags
 - **Video player** — Side-by-side layout with playback controls, sections, and progress tabs
-- **Ear Training** — 4-mode trainer with piano keyboard visualization (`/ear-training.html`)
 - **Metronome page** — Standalone metronome with tap tempo (`/metronome.html`)
 - **Curriculum page** — Full 5-phase breakdown (`/curriculum.html`)
 - **Mobile view** — Hamburger menu, global search, responsive layout
@@ -155,16 +154,6 @@ Configured playlists live in `playlist-modules.json`.
 - **Section bookmarks** — save timestamps with labels
 - **Keyboard shortcuts** — Space (play/pause), ← → (prev/next lesson), ↑ ↓ (speed)
 
-### 👂 Ear Training
-- **4 practice modes** — Intervals, Chords, Progressions, Progression Quiz
-- **Progression Quiz** — hear a progression in a random key and identify each chord's Roman numeral one by one
-- **12 Roman numeral buttons** — covers diatonic (I, ii, iii, IV, V, vi) + borrowed chords (bII, bIII, bVI, bVII, VI, vii°)
-- **3 difficulty levels** with appropriate content per level
-- **Piano keyboard visualization** — 2-octave keyboard (C4–B5) lights up in real-time as notes play
-- **Master volume slider** — gain control with localStorage persistence
-- **Score tracking** — correct/wrong count and streak per session
-- **Keyboard shortcuts** — Space (replay), Enter (next)
-
 ### 🥁 Built-in Metronome
 - **Standalone metronome page** — practice without a video at `/metronome.html`
 - **Video metronome** — embedded in the playback tab alongside controls
@@ -229,7 +218,6 @@ worship-piano/
 └── public/
     ├── index.html         # Main app UI (header, views, CSS, modals)
     ├── app.js             # All client-side logic (phases, player, search, PiP, metronome)
-    ├── ear-training.html  # Standalone ear training page (4 modes, piano viz, volume)
     ├── metronome.html     # Standalone metronome page
     ├── curriculum.html    # Full curriculum overview page
     ├── credits.html       # Credits & acknowledgements page
@@ -255,7 +243,6 @@ worship-piano/
 | `GET` | `/api/health` | — | Health check with uptime, environment, version |
 | `GET` | `/api/modules` | — | Returns all modules with nested lessons |
 | `POST` | `/api/sync` | `x-api-key` header | Triggers YouTube RSS feed sync for new videos |
-| `GET` | `/ear-training.html` | — | Standalone ear training tool |
 | `GET` | `/curriculum.html` | — | Static curriculum overview page |
 | `GET` | `/credits.html` | — | Credits & acknowledgements |
 | `GET` | `/metronome.html` | — | Standalone metronome tool |
@@ -362,7 +349,6 @@ sudo certbot --nginx -d your-domain.com
 
 After deployment, these pages are available:
 - **https://your-domain.com/** — Main app with video player, lesson browser
-- **https://your-domain.com/ear-training.html** — Ear training (4 modes, piano viz)
 - **https://your-domain.com/curriculum.html** — Full curriculum overview
 - **https://your-domain.com/metronome.html** — Standalone metronome
 - **https://your-domain.com/credits.html** — Credits & acknowledgements

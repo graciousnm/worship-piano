@@ -1831,7 +1831,7 @@
       if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) return;
 
       if (e.key === ' ' || e.code === 'Space') {
-        // Don't toggle playback if a modal is open (ear training, badge gallery, etc.)
+        // Don't toggle playback if the badge gallery is open
         if (badgeModal && badgeModal.classList.contains('show')) return;
         e.preventDefault();
         if (player && typeof player.getPlayerState === 'function') {
@@ -1993,7 +1993,7 @@
 
     }
 
-  // ── Hamburger Helpers (IIFE scope for access by ear training) ──
+  // ── Hamburger Helpers ──
   function openHamburger() {
     hamburgerDropdown.classList.add('open');
     hamburgerDropdown.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
@@ -2179,7 +2179,6 @@
     });
   }
 
-  // Ear Training moved to standalone page: /ear-training.html
   // ── Init ─────────────────────────────────────────────────
   function init() {
     initPwaInstall();
