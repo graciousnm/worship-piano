@@ -126,6 +126,30 @@
         max-width: 12px !important;
       }
     }
+
+    /* ========= Minimal footer (2-line centered) ========= */
+    .app-footer {
+      margin-top: 3rem;
+      position: relative;
+      border-top: 1px solid rgba(63,63,70,0.6);
+      background: rgba(9,9,11,0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .app-footer a.app-footer-bottom {
+      border-top: 1px solid rgba(63,63,70,0.6); /* zinc-700/60 */
+      margin-top: 2rem;
+      padding-top: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      font-size: 0.72rem;
+      color: #71717a;
+    }
+    @media (min-width: 640px) {
+      .app-footer-bottom { flex-direction: row; align-items: center; justify-content: space-between; }
+    }
   </style>
 </head>
 <body class="text-zinc-200 font-sans antialiased flex flex-col min-h-screen">
@@ -458,5 +482,17 @@
 
     })();
   </script>
+
+  <!-- ========= Shared footer (matches across all in-app pages) ========= -->
+  
+  <!-- ========= Minimal footer (user-requested) ========= -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 text-center">
+      <p class="text-xs text-zinc-500">© <span id="app-footer-year">2026</span> Worship Piano · Built with intent for the worship community.</p>
+      <p class="text-[0.65rem] text-zinc-600 mt-1">v1.0 · Last practice is the next one.</p>
+    </div>
+    <script>(function(){var yr=document.getElementById("app-footer-year");if(yr)yr.textContent=new Date().getFullYear();})();</script>
+  </footer>
+
 </body>
 </html>
