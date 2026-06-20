@@ -931,13 +931,14 @@
       border: 1px solid rgba(255,255,255,0.08);
       box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
       opacity: 0;
-      transform: translateY(16px) scale(0.95);
+      /* Compose drag offset (--pip-drag-x/y) with the enter animation offset */
+      transform: translate(var(--pip-drag-x, 0px), calc(16px + var(--pip-drag-y, 0px))) scale(0.95);
       pointer-events: none;
       transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
     }
     #mini-player.visible {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translate(var(--pip-drag-x, 0px), var(--pip-drag-y, 0px)) scale(1);
       pointer-events: auto;
     }
     #mini-player:hover {
@@ -982,7 +983,11 @@
     #mini-player-handle .mini-ctrl:hover {
       background: rgba(255,255,255,0.12);
       color: #f4f4f5;
+      cursor: pointer; /* override the drag handle's cursor:grab inside clickable buttons */
     }
+    /* Keep cursor:pointer during mousedown-hold on a button so it doesn't
+       flicker to the inherited cursor:grabbing from #mini-player-handle:active. */
+    #mini-player-handle .mini-ctrl:active { cursor: pointer; }
     #mini-close:hover { background: rgba(239,68,68,0.2) !important; color: #f87171 !important; }
     #mini-player-inner {
       width: 100%;
@@ -991,29 +996,7 @@
       cursor: pointer;
       position: relative;
     }
-    #mini-player-inner::after {
-      content: 'Click to expand';
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0,0,0,0.5);
-      color: #d4d4d8;
-      font-size: 0.75rem;
-      font-weight: 500;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      pointer-events: auto;
-      cursor: pointer;
-      z-index: 2;
-    }
-    #mini-player-inner:hover::after { opacity: 1; }
-    /* On touch devices, always show the overlay so taps work */
-    @media (hover: none) {
-      #mini-player-inner::after { opacity: 0.6; }
-    }
-    @media (max-width: 640px) {
+@media (max-width: 640px) {
       #mini-player {
         width: 240px;
         right: 16px;
@@ -1474,8 +1457,9 @@
   <div id="mini-player">
     <div id="mini-player-handle">
       <span id="mini-player-title">—</span>
-      <button id="mini-play" class="mini-ctrl" title="Play / Pause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
-      <button id="mini-close" class="mini-ctrl" title="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <button id="mini-play" class="mini-ctrl" title="Play / Pause" aria-label="Play / Pause"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+      <button id="mini-expand" class="mini-ctrl" title="Expand to full player" aria-label="Expand to full player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+      <button id="mini-close" class="mini-ctrl" title="Close player" aria-label="Close player"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div id="mini-player-inner">
       <!-- YouTube iframe moved here in PiP mode -->

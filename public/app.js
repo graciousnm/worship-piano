@@ -96,6 +96,7 @@
   const miniPlayerInner = document.getElementById('mini-player-inner');
   const miniPlayerTitle = document.getElementById('mini-player-title');
   const miniPlayBtn = document.getElementById('mini-play');
+  const miniExpandBtn = document.getElementById('mini-expand');
   const miniCloseBtn = document.getElementById('mini-close');
   const miniPlayerHandle = document.getElementById('mini-player-handle');
   const globalSearchInput = document.getElementById('global-search');
@@ -1430,6 +1431,10 @@
           modestbranding: 1,
           rel: 0,
           controls: 1,
+          // fs: 0 disables YouTube's native fullscreen button so our own
+          // #mini-expand affordance (or click-to-expand) is the single path
+          // back to the dedicated video view.
+          fs: 0,
           iv_load_policy: 3,
           playsinline: 1,
           origin: window.location.origin
@@ -1519,12 +1524,16 @@
     miniPlayerTitle.textContent = currentLesson ? currentLesson.title : '—';
   }
 
+  // Mini play button mirrors whichever player is actually producing audio:
+  // pipPlayer when PiP is active, otherwise the main `player`. This keeps
+  // the button in lockstep with the visible video, not the muted parent.
   function updateMiniPlayButton() {
-    if (!player || typeof player.getPlayerState !== 'function') {
+    const active = pipActive && pipPlayer ? pipPlayer : player;
+    if (!active || typeof active.getPlayerState !== 'function') {
       miniPlayBtn.textContent = '▶';
       return;
     }
-    miniPlayBtn.textContent = player.getPlayerState() === 1 ? '⏸' : '▶';
+    miniPlayBtn.textContent = active.getPlayerState() === 1 ? '⏸' : '▶';
   }
 
   // ── Complete Checkbox ────────────────────────────────────
@@ -1868,11 +1877,11 @@
     if (miniPlayBtn) {
       miniPlayBtn.addEventListener('click', function (e) {
         e.stopPropagation();
-        if (!player) return;
-        if (typeof player.getPlayerState === 'function') {
-          if (player.getPlayerState() === 1) player.pauseVideo();
-          else player.playVideo();
-        }
+        // Toggle whichever player is currently producing the visible audio.
+        const active = pipActive && pipPlayer ? pipPlayer : player;
+        if (!active || typeof active.getPlayerState !== 'function') return;
+        if (active.getPlayerState() === 1) active.pauseVideo();
+        else active.playVideo();
         updateMiniPlayButton();
       });
     }
@@ -1884,52 +1893,71 @@
       });
     }
 
-    // Click the mini player body to expand back to full view
+    // Expand handler — used by both the click-on-mini-player-body affordance
+    // and the explicit #mini-expand button in the handle. Returns to the
+    // dedicated video view (which holds the player + sections + metronome).
+    function expandMiniPlayer() {
+      if (!pipActive || !currentLesson) return;
+      exitPipMode();
+      // Replace the top of viewHistory so Back returns to the phase/lesson view.
+      viewHistory.push({ view: 'lesson', phaseIdx: currentPhaseIdx });
+      if (viewHistory.length > 1 && viewHistory[viewHistory.length - 2].view === 'lesson') {
+        viewHistory.splice(viewHistory.length - 2, 1);
+      }
+      showView('video', 'forward');
+      updateBreadcrumb();
+    }
+
     if (miniPlayerInner) {
-      miniPlayerInner.addEventListener('click', function () {
-        if (!pipActive || !currentLesson) return;
-        exitPipMode();
-        // Navigate back to video view — push lesson entry so Back works
-        viewHistory.push({ view: 'lesson', phaseIdx: currentPhaseIdx });
-        if (viewHistory.length > 1 && viewHistory[viewHistory.length - 2].view === 'lesson') {
-          viewHistory.splice(viewHistory.length - 2, 1);
-        }
-        showView('video', 'forward');
-        updateBreadcrumb();
+      miniPlayerInner.addEventListener('click', expandMiniPlayer);
+    }
+
+    // Explicit expand button in the mini player handle. Routes to the same
+    // destination as clicking the video body — the dedicated video view with
+    // sections tab, metronome, and full controls. The visible icon makes the
+    // affordance discoverable (the video-body click is implicit).
+    if (miniExpandBtn) {
+      miniExpandBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        expandMiniPlayer();
       });
     }
 
-    // Drag to reposition the mini player
+    // Drag to reposition the mini player.
+    // Uses CSS custom properties (--pip-drag-x/y) composed into #mini-player's transform,
+    // so drag stays out of layout/paint and listeners attach/detach on drag only.
     if (miniPlayerHandle && miniPlayer) {
       let dragActive = false;
-      let dragStartX, dragStartY, startLeft, startTop;
+      let dragStartX, dragStartY;
+
+      function onDragMove(e) {
+        if (!dragActive) return;
+        // dragStartX/Y stay fixed at the mousedown point so we write the
+        // absolute cursor offset (not per-event delta). Without this, a
+        // direction reversal would make the element jump instead of tracking
+        // the cursor smoothly.
+        miniPlayer.style.setProperty('--pip-drag-x', (e.clientX - dragStartX) + 'px');
+        miniPlayer.style.setProperty('--pip-drag-y', (e.clientY - dragStartY) + 'px');
+      }
+
+      function onDragEnd() {
+        if (!dragActive) return;
+        dragActive = false;
+        miniPlayer.style.transition = '';
+        // Remove listeners so we don't leak handlers across drags
+        window.removeEventListener('mousemove', onDragMove);
+        window.removeEventListener('mouseup', onDragEnd);
+      }
 
       miniPlayerHandle.addEventListener('mousedown', function (e) {
         if (e.target.closest('button')) return; // don't drag when clicking buttons
         dragActive = true;
-        const rect = miniPlayer.getBoundingClientRect();
         dragStartX = e.clientX;
         dragStartY = e.clientY;
-        startLeft = rect.left;
-        startTop = rect.top;
         miniPlayer.style.transition = 'none';
+        window.addEventListener('mousemove', onDragMove);
+        window.addEventListener('mouseup', onDragEnd);
         e.preventDefault();
-      });
-
-      window.addEventListener('mousemove', function (e) {
-        if (!dragActive) return;
-        const dx = e.clientX - dragStartX;
-        const dy = e.clientY - dragStartY;
-        miniPlayer.style.left = (startLeft + dx) + 'px';
-        miniPlayer.style.top = (startTop + dy) + 'px';
-        miniPlayer.style.right = 'auto';
-        miniPlayer.style.bottom = 'auto';
-      });
-
-      window.addEventListener('mouseup', function () {
-        if (!dragActive) return;
-        dragActive = false;
-        miniPlayer.style.transition = '';
       });
     }
 
@@ -2084,56 +2112,17 @@
     }, 400);
   }
 
-  function initPwaInstall() {
+  async function initPwaInstall() {
     // Don't show if already running as installed app
     if (window.matchMedia('(display-mode: standalone)').matches ||
         window.navigator.standalone === true) {
       return;
     }
 
-    // Check if user dismissed recently — if so, wait before showing again
-    var shouldShow = true;
-    try {
-      var dismissedAt = parseInt(localStorage.getItem(PWA_DISMISSED_KEY), 10);
-      if (dismissedAt && Date.now() - dismissedAt < PWA_REAPPEAR_DELAY) {
-        shouldShow = false;
-      }
-    } catch (e) { /* localStorage unavailable */ }
-
-    if (!shouldShow) return;
-
-    // iOS: beforeinstallprompt doesn't fire on Safari/iPad, show banner with instructions immediately
-    if (isIOS()) {
-      showPwaBanner(true);
-      return;
-    }
-
-    // Chrome/Android: capture the beforeinstallprompt event if Chrome fires it
-    window.addEventListener('beforeinstallprompt', function (e) {
-      e.preventDefault();
-      deferredPrompt = e;
-      // Show banner as soon as we have the prompt object
-      showPwaBanner(false);
-    });
-
-    window.addEventListener('appinstalled', function () {
-      deferredPrompt = null;
-      // Clear dismissal timestamp — app is installed, no need to show again
-      try { localStorage.removeItem(PWA_DISMISSED_KEY); } catch (e) {}
-      hidePwaBanner();
-    });
-
-    // Proactive: show banner after a short delay even if beforeinstallprompt hasn't fired.
-    // Chrome may not fire the event immediately (requires engagement signals),
-    // but we still want to prompt the user to install.
-    setTimeout(function () {
-      if (!deferredPrompt) {
-        // Chrome hasn't fired beforeinstallprompt yet — show banner anyway
-        // The Install button will check deferredPrompt and fall back gracefully
-        showPwaBanner(false);
-      }
-    }, 1500);
-
+    // Bind install/dismiss buttons synchronously *before* the await below so that
+    // clicks work during the getInstalledRelatedApps() resolution window. If
+    // beforeinstallprompt fires while we're awaiting, the banner can become
+    // visible immediately — and these handlers must already be wired up.
     if (pwaInstallBtn) {
       pwaInstallBtn.addEventListener('click', async function () {
         if (deferredPrompt) {
@@ -2160,6 +2149,58 @@
         hidePwaBanner(true); // Store dismissal so banner reappears after cooldown
       });
     }
+
+    // Honor already-installed state via getInstalledRelatedApps() (Chrome/Edge only).
+    // Catches users who installed the PWA via Chrome's install UI and are now
+    // visiting the same origin in a regular browser tab — without this, we
+    // would re-prompt them to install something they already have. Requires
+    // the manifest to declare `related_applications` self-referencing the PWA.
+    if ('getInstalledRelatedApps' in navigator) {
+      try {
+        const apps = await navigator.getInstalledRelatedApps();
+        if (apps && apps.length > 0) {
+          // Clear any stale dismissal record — we now know the app IS installed
+          try { localStorage.removeItem(PWA_DISMISSED_KEY); } catch (e) {}
+          return;
+        }
+      } catch (e) { /* fail open: continue with normal banner logic */ }
+    }
+
+    // Check if user dismissed recently — if so, wait before showing again
+    var shouldShow = true;
+    try {
+      var dismissedAt = parseInt(localStorage.getItem(PWA_DISMISSED_KEY), 10);
+      if (dismissedAt && Date.now() - dismissedAt < PWA_REAPPEAR_DELAY) {
+        shouldShow = false;
+      }
+    } catch (e) { /* localStorage unavailable */ }
+
+    if (!shouldShow) return;
+
+    // iOS: beforeinstallprompt doesn't fire on Safari/iPad, show banner with instructions immediately
+    if (isIOS()) {
+      showPwaBanner(true);
+      return;
+    }
+
+    // Chrome/Android: capture the beforeinstallprompt event if Chrome fires it.
+    // (Removed the proactive setTimeout that previously forced the banner to appear
+    // on every visit when beforeinstallprompt hadn't fired yet. Chrome deliberately
+    // does not fire that event for already-installed PWAs, so the proactive
+    // fallback was re-prompting returning users to install what they already had.)
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show banner as soon as we have the prompt object
+      showPwaBanner(false);
+    });
+
+    window.addEventListener('appinstalled', function () {
+      deferredPrompt = null;
+      // Clear dismissal timestamp — app is installed, no need to show again
+      try { localStorage.removeItem(PWA_DISMISSED_KEY); } catch (e) {}
+      hidePwaBanner();
+    });
   }
 
   // ── iOS Instruction Modal ──
